@@ -80,18 +80,30 @@ io.on('connection', (socket) => {
     const room = rooms[code];
     if (!room) return;
     if (room.hostSocketId !== socket.id) return;
+    if (room.state !== 'waiting') return;
 
-    room.questionCount = questionCount;
+    // 兼容 Socket.IO 多参数：如果 questionsData 为空但 questionCount 是数组，则交换
+    if (!questionsData && Array.isArray(questionCount)) {
+      const arr = questionCount;
+      questionCount = arr[0];
+      questionsData = arr[1];
+    }
+
+    const qc = parseInt(questionCount) || 0;
+    if (qc <= 0) return;
+    if (!Array.isArray(questionsData) || questionsData.length === 0) return;
+
+    room.questionCount = qc;
     room.questions = questionsData;
     room.state = 'playing';
     room.currentRound = 0;
 
     io.to(code).emit('gameStart', {
-      questionCount,
+      questionCount: qc,
       questions: questionsData,
       players: room.players.map(p => ({ id: p.id, name: p.name, score: p.score }))
     });
-    console.log(`[房间] ${code} 游戏开始，${room.players.length} 人，${questionCount} 题`);
+    console.log(`[房间] ${code} 游戏开始，${room.players.length} 人，${qc} 题`);
   });
 
   // === 提交答案 ===

@@ -495,9 +495,19 @@ function initSocket() {
   });
 
   socket.on('gameStart', (data) => {
+    // 校验数据有效性
+    if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
+      console.error('gameStart: 题目数据无效');
+      return;
+    }
+    const qc = parseInt(data.questionCount) || 0;
+    if (qc <= 0) {
+      console.error('gameStart: 题目数量无效', data.questionCount);
+      return;
+    }
     questions = data.questions;
-    totalQuestions = data.questionCount;
-    players = data.players;
+    totalQuestions = qc;
+    players = data.players || [];
     currentIndex = 0;
     score = 0;
     answered = false;
@@ -658,15 +668,20 @@ function renderWaitingRoom() {
 // ============ 房主开始游戏 ============
 function hostStartGame(count) {
   if (!isHost) return;
-  totalQuestions = count;
+  if (gameEnded !== undefined && !gameEnded && totalQuestions > 0) return; // 防止重复开始
   const seed = Date.now();
   const questionsData = seededShuffle(ALL_QUESTIONS, seed).slice(0, count);
+  if (!questionsData || questionsData.length === 0) {
+    alert('题目数据加载失败，请刷新页面重试');
+    return;
+  }
   socket.emit('startGame', count, questionsData);
 }
 
 // ============ 对战答题 ============
 function renderBattleQuestion() {
-  if (currentIndex >= totalQuestions) {
+  if (!questions || questions.length === 0 || totalQuestions <= 0) return;
+  if (currentIndex >= totalQuestions || currentIndex >= questions.length) {
     socket.emit('gameOver');
     return;
   }
