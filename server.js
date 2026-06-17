@@ -41,6 +41,13 @@ io.on('connection', (socket) => {
 
   // === 创建房间 ===
   socket.on('createRoom', (playerName, callback) => {
+    // 兼容 Socket.IO 多参数打包
+    if (!callback && typeof playerName === 'object') {
+      const arr = Array.isArray(playerName) ? playerName : [playerName];
+      playerName = arr[0];
+      callback = arr[arr.length - 1];
+    }
+    if (typeof callback !== 'function') { console.error('[创建] callback 无效'); return; }
     const { code, pid } = createRoom(socket.id, playerName);
     socket.join(code);
     socket.data.roomCode = code;
@@ -51,6 +58,17 @@ io.on('connection', (socket) => {
 
   // === 加入房间 ===
   socket.on('joinRoom', (roomCode, playerName, callback) => {
+    // 兼容 Socket.IO 多参数打包
+    if (!callback && !playerName && typeof roomCode === 'object') {
+      const arr = Array.isArray(roomCode) ? roomCode : [roomCode];
+      roomCode = String(arr[0] || '');
+      playerName = arr[1];
+      callback = arr[2];
+    }
+    if (typeof callback !== 'function') { console.error('[加入] callback 无效'); return; }
+    if (!roomCode || typeof roomCode !== 'string') {
+      return callback({ success: false, error: '房间号格式错误' });
+    }
     const room = rooms[roomCode];
     if (!room) return callback({ success: false, error: '房间不存在' });
     if (room.state !== 'waiting') return callback({ success: false, error: '游戏已开始' });
