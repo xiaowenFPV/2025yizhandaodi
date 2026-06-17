@@ -1,0 +1,12 @@
+{
+  "name": "quiz-site",
+  "version": "1.0.0",
+  "description": "趣味答题挑战网站",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
