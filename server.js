@@ -41,11 +41,15 @@ io.on('connection', (socket) => {
 
   // === 创建房间 ===
   socket.on('createRoom', (playerName, callback) => {
-    // 兼容 Socket.IO 多参数打包
+    // 兼容客户端发送对象格式（如 duel 模式传来的 { name, gameMode }）
     if (!callback && typeof playerName === 'object') {
       const arr = Array.isArray(playerName) ? playerName : [playerName];
       playerName = arr[0];
       callback = arr[arr.length - 1];
+    }
+    // 兼容 playerName 是对象但 callback 已传入的情况（duel 模式）
+    if (typeof playerName === 'object' && playerName !== null && playerName.name) {
+      playerName = playerName.name;
     }
     if (typeof callback !== 'function') { console.error('[创建] callback 无效'); return; }
     const { code, pid } = createRoom(socket.id, playerName);
@@ -53,7 +57,15 @@ io.on('connection', (socket) => {
     socket.data.roomCode = code;
     socket.data.playerId = pid;
     console.log(`[房间] ${code} 创建，房主: ${playerName} (${pid})`);
-    callback({ success: true, roomCode: code, playerId: pid, players: rooms[code].players });
+
+    // 广播玩家列表给房中所有人（格式匹配客户端 data.players 预期）
+    const room = rooms[code];
+    const playerListData = { players: room.players.map(p => ({
+      id: p.id, name: p.name, score: p.score, isHost: p.socketId === room.hostSocketId
+    })) };
+    io.to(code).emit('playerList', playerListData);
+
+    callback({ success: true, roomCode: code, playerId: pid, players: room.players });
   });
 
   // === 加入房间 ===
@@ -84,10 +96,10 @@ io.on('connection', (socket) => {
 
     console.log(`[房间] ${roomCode} 加入: ${playerName} (${pid})，共 ${room.players.length} 人`);
 
-    // 广播更新后的玩家列表
-    io.to(roomCode).emit('playerList', room.players.map(p => ({
+    // 广播更新后的玩家列表（格式匹配客户端 data.players 预期）
+    io.to(roomCode).emit('playerList', { players: room.players.map(p => ({
       id: p.id, name: p.name, score: p.score, isHost: p.socketId === room.hostSocketId
-    })));
+    })) });
 
     callback({ success: true, playerId: pid, players: room.players });
   });
