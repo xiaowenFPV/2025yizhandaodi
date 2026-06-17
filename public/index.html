@@ -673,7 +673,7 @@ function initDuelSocket() {
   socket.on('playerList', (data) => {
     players = data.players.map(p => ({
       id: p.id, name: p.name, score: p.score,
-      isHost: p.id === data.players[0].id
+      isHost: p.isHost !== undefined ? p.isHost : (p.id === data.players[0].id)
     }));
 
     if (players.length >= 2) {
@@ -1050,7 +1050,7 @@ function initSocket() {
   socket.on('playerList', (data) => {
     players = data.players.map(p => ({
       id: p.id, name: p.name, score: p.score,
-      isHost: p.id === data.players[0].id
+      isHost: p.isHost !== undefined ? p.isHost : (p.id === data.players[0].id)
     }));
     if (gameMode === 'multi' || gameMode === 'host' || gameMode === 'guest') renderWaitingRoom();
   });
