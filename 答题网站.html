@@ -778,8 +778,8 @@ function renderBattleQuestion() {
       </div>
     </div>
     <div class="hint">输入答案后按回车或点提交</div>
-  `<button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
-    ;
+    <button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
+  `;
 
   answered = false;
   answeredCount = 0;
@@ -859,6 +859,7 @@ function renderBattleRoundResult(data) {
   }).join('');
 
   document.getElementById('app').innerHTML = `
+    <button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
     <div class="header">
       <span>第 ${currentIndex + 1}/${total} 题</span>
       <div class="progress-wrap"><div class="progress-bar" style="width:${progress}%"></div></div>
@@ -883,8 +884,7 @@ function renderBattleRoundResult(data) {
             ${data.ranking.map((r, i) => {
               const isMe = r.id === myPlayerId;
               const cls = i === 0 ? 'rank-1' : (i === 1 ? 'rank-2' : (i === 2 ? 'rank-3' : ''));
-              return `<button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
-    <tr style="${isMe?'background:rgba(255,210,0,0.08);':''}">
+              return `<tr style="${isMe?'background:rgba(255,210,0,0.08);':''}">
                 <td style="padding:4px 6px;font-weight:700;color:${cls==='rank-1'?'#ffd200':cls==='rank-2'?'#c0c0c0':cls==='rank-3'?'#cd7f32':'rgba(255,255,255,0.5)'};">#${r.rank}</td>
                 <td style="padding:4px 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(r.name)}${isMe?' (我)':''}</td>
                 <td style="padding:4px 6px;font-weight:700;color:#ffd200;text-align:right;">${r.score}</td>
@@ -938,6 +938,7 @@ function renderBattleGameOver(data) {
   const iAmWinner = myRank && myRank.rank === 1;
 
   document.getElementById('app').innerHTML = `
+    <button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
     <div class="card result-card">
       <div class="score-label">对战结束</div>
       <div style="font-size:26px;font-weight:700;color:${iAmWinner ? '#ffd200' : '#4cd964'};margin-bottom:4px;">
@@ -959,8 +960,7 @@ function renderBattleGameOver(data) {
         <div style="max-height:240px;overflow-y:auto;padding-right:8px;">
           ${roundResults.map((rr, i) => {
             const myR = rr.results.find(r => r.id === myPlayerId);
-            return `<button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
-    
+            return `
             <div class="round-result-item" style="margin-bottom:6px;padding:8px;">
               <span style="font-size:12px;color:rgba(255,255,255,0.4);margin-right:8px;">R${i+1}</span>
               <span style="flex:1;font-size:12px;color:rgba(255,255,255,0.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(rr.questionText)}</span>
@@ -1058,8 +1058,8 @@ function renderSoloQuestion() {
       <button class="btn btn-next" id="nextBtn" disabled onclick="soloNext()">下一题 →</button>
     </div>
     <div class="hint">输入答案后按回车或点提交</div>
-  `<button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
-    ;
+    <button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
+  `;
   answered = false;
   const input = document.getElementById('answerInput');
   if (input) {
@@ -1134,8 +1134,9 @@ function renderSoloResult() {
         <button class="btn btn-restart" onclick="goHome()" style="background:rgba(255,255,255,0.12);">返回首页</button>
       </div>
       ${wh}
-    </div>`<button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
-    ;
+      <button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
+    </div>
+  `;
 }
 
 // ============ 通用 ============
