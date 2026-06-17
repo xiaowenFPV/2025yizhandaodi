@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>趣味答题挑战</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.container {
+  width: 100%;
+  max-width: 640px;
+}
+
+/* 顶部信息栏 */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  color: rgba(255,255,255,0.8);
+  font-size: 14px;
+}
+
+.progress-wrap {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 3px;
+  margin: 0 16px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #f7971e, #ffd200);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* 题目卡片 */
+.card {
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 32px 28px;
+  transition: all 0.3s ease;
+}
+
+.question-num {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+
+.question-text {
+  font-size: 20px;
+  color: #fff;
+  line-height: 1.7;
+  margin-bottom: 28px;
+  font-weight: 500;
+}
+
+/* 选项区 */
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.option-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  font-size: 16px;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.25s;
+  text-align: left;
+  width: 100%;
+}
+
+.option-btn:hover {
+  border-color: rgba(255,210,0,0.5);
+  background: rgba(255,210,0,0.08);
+  transform: translateX(4px);
+}
+
+.option-btn:disabled {
+  cursor: not-allowed;
+}
+
+.option-btn .opt-letter {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: all 0.25s;
+}
+
+.option-btn.selected {
+  border-color: #ffd200;
+  background: rgba(255,210,0,0.12);
+}
+
+.option-btn.selected .opt-letter {
+  background: #ffd200;
+  color: #1a1a2e;
+}
+
+.option-btn.correct-answer {
+  border-color: rgba(76,217,100,0.6);
+  background: rgba(76,217,100,0.12);
+}
+
+.option-btn.correct-answer .opt-letter {
+  background: #4cd964;
+  color: #fff;
+}
+
+.option-btn.wrong-answer {
+  border-color: rgba(255,69,58,0.5);
+  background: rgba(255,69,58,0.08);
+}
+
+.option-btn.wrong-answer .opt-letter {
+  background: #ff453a;
+  color: #fff;
+}
+
+/* 反馈区 */
+.feedback {
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 15px;
+  display: none;
+  animation: fadeIn 0.3s ease;
+  margin-bottom: 16px;
+}
+
+.feedback.show { display: block; }
+
+.feedback.correct-msg {
+  background: rgba(76,217,100,0.15);
+  color: #4cd964;
+  border: 1px solid rgba(76,217,100,0.3);
+}
+
+.feedback.wrong-msg {
+  background: rgba(255,69,58,0.15);
+  color: #ff453a;
+  border: 1px solid rgba(255,69,58,0.3);
+}
+
+.feedback .correct-answer {
+  color: #ffd200;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* 按钮 */
+.btn {
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s;
+  white-space: nowrap;
+}
+
+.btn-next {
+  background: linear-gradient(135deg, #f7971e, #ffd200);
+  color: #1a1a2e;
+  width: 100%;
+}
+
+.btn-next:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(247,151,30,0.4); }
+.btn-next:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-restart {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  padding: 16px 40px;
+  font-size: 17px;
+}
+
+.btn-restart:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(102,126,234,0.5); }
+
+/* 结果页 */
+.result-card {
+  text-align: center;
+}
+
+.result-card .score-circle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: conic-gradient(#ffd200 var(--percent), rgba(255,255,255,0.1) var(--percent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  position: relative;
+}
+
+.result-card .score-circle::before {
+  content: '';
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: #1a1a3e;
+  position: absolute;
+}
+
+.result-card .score-num {
+  font-size: 36px;
+  font-weight: 700;
+  color: #ffd200;
+  z-index: 1;
+}
+
+.result-card .score-label {
+  font-size: 14px;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 8px;
+}
+
+.result-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin: 20px 0 28px;
+}
+
+.result-stats .stat {
+  text-align: center;
+}
+
+.result-stats .stat-val {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.result-stats .stat-val.green { color: #4cd964; }
+.result-stats .stat-val.red { color: #ff453a; }
+.result-stats .stat-val.rate { color: #ffd200; }
+
+.result-stats .stat-lbl {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 4px;
+}
+
+/* 快捷键提示 */
+.hint {
+  text-align: center;
+  color: rgba(255,255,255,0.35);
+  font-size: 13px;
+  margin-top: 16px;
+}
+
+/* 选择界面 */
+.select-card {
+  text-align: center;
+}
+
+.select-card .logo {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.select-card .title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.select-card .subtitle {
+  font-size: 14px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 32px;
+}
+
+.select-card .total-info {
+  font-size: 14px;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 24px;
+  padding: 12px 20px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.select-card .total-info strong {
+  color: #ffd200;
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.btn-option {
+  padding: 18px 12px;
+  font-size: 17px;
+  font-weight: 600;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.btn-option:hover {
+  border-color: #ffd200;
+  background: rgba(255,210,0,0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255,210,0,0.2);
+}
+
+.btn-option.all-btn {
+  grid-column: 2 / 3;
+}
+
+.btn-option .count-num {
+  display: block;
+  font-size: 26px;
+  color: #ffd200;
+  margin-bottom: 2px;
+}
+
+.btn-option .count-label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25%     { transform: translateX(-6px); }
+  75%     { transform: translateX(6px); }
+}
+
+.shake { animation: shake 0.4s ease; }
+
+/* 移动端 */
+@media (max-width: 480px) {
+  .card { padding: 24px 18px; }
+  .question-text { font-size: 17px; }
+  .option-btn { padding: 12px 14px; font-size: 15px; }
+  .result-stats { gap: 20px; }
+  .option-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .btn-option.all-btn { grid-column: auto; }
+  .btn-option { padding: 14px 10px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container" id="app"></div>
+
+<script>
+const ALL_QUESTIONS = [{"q": "“大珠小珠落玉盘”形容的是哪种乐器演奏的乐声？", "options": ["上下结构", "书法", "琵琶", "京剧"], "correct": "C", "correct_idx": 2}, {"q": "哪位音乐家的音乐被誉为“花丛中的大炮”？", "options": ["郑成功", "苏轼", "汪伦", "肖邦"], "correct": "D", "correct_idx": 3}, {"q": "我们常在影视剧中听到呼喊“号外号外”的小孩是在兜售什么？", "options": ["肖邦", "卫青", "报纸", "琵琶"], "correct": "C", "correct_idx": 2}, {"q": "以下哪个科室属于医院中的五官科？", "options": ["京口", "报纸", "口腔科", "曾任楚国令尹"], "correct": "C", "correct_idx": 2}, {"q": "诗句“桃花潭水深千尺”，原诗中比水更深的是谁的情谊？", "options": ["汪伦", "蔡伦", "寇准", "郑成功"], "correct": "A", "correct_idx": 0}, {"q": "下面哪位词人的出生地不在山东地区？", "options": ["苏东坡", "苏轼", "苏秦", "肖邦"], "correct": "B", "correct_idx": 1}, {"q": "以下哪条对屈原的描述是不正确的？", "options": ["曾任楚国令尹", "六国论", "英国", "少年中国说"], "correct": "A", "correct_idx": 0}, {"q": "“溜须拍马”中的“溜须”典故与哪位历史人物有关？", "options": ["郑成功", "高原", "肖邦", "寇准"], "correct": "D", "correct_idx": 3}, {"q": "哪位汉初勇将与刘邦是连襟关系？", "options": ["高原", "樊哙", "张骞", "孟子"], "correct": "B", "correct_idx": 1}, {"q": "秦汉时期，逐渐取代青铜而被广泛使用的是哪种金属？", "options": ["碳酸钙", "铁", "锌", "钠"], "correct": "B", "correct_idx": 1}, {"q": "古代文学作品中通常用哪种乔木类果实来象征相思？", "options": ["红豆", "琵琶", "红绿蓝", "红色"], "correct": "A", "correct_idx": 0}, {"q": "“五十步笑百步”这个典故出自哪部先秦典籍？", "options": ["孟子", "肖邦", "丰子恺", "孔子"], "correct": "A", "correct_idx": 0}, {"q": "汉武帝同胞姐姐平阳公主嫁给了哪位抗匈名将并在身后与之合葬？", "options": ["汪伦", "卫青", "贺知章", "陆游"], "correct": "B", "correct_idx": 1}, {"q": "世界哲学的三大发源地是指古代中国、古代希腊和哪个古代国家？", "options": ["北纬三十度", "印度", "琵琶", "肖邦"], "correct": "B", "correct_idx": 1}, {"q": "赤壁之战中，哪位吴国将领假装投降以接近曹军发动火攻？", "options": ["黄河", "黄海", "黄盖", "黄土高原"], "correct": "C", "correct_idx": 2}, {"q": "中国台湾省台南市的延平郡王祠祭祀的是哪一位明末人物？", "options": ["郑成功", "肖邦", "寇准", "孟子"], "correct": "A", "correct_idx": 0}, {"q": "宋代之前常说的“周孔之教”指的是哪个学派？", "options": ["儒家", "儒林外史", "曾任楚国令尹", "口腔科"], "correct": "A", "correct_idx": 0}, {"q": "哪部著名的法国儿童文学作品中的主人公来自于B-612号小行星？", "options": ["小王子", "陈子昂", "金蝉子", "王维"], "correct": "A", "correct_idx": 0}, {"q": "源于《列女传》中的东海孝妇故事被关汉卿改编成了哪部著名剧目？", "options": ["寇准", "窦娥冤", "铁", "汪伦"], "correct": "B", "correct_idx": 1}, {"q": "《最初的印象》是简奥斯汀哪部代表作的原名？", "options": ["见不贤而内自省也", "苏轼", "汪伦", "傲慢与偏见"], "correct": "D", "correct_idx": 3}, {"q": "明朝郑和船队曾将哪种动物当做异兽麒麟带回了中国？", "options": ["狗", "长颈鹿", "下雪", "庄子"], "correct": "B", "correct_idx": 1}, {"q": "《国际歌》是以哪个无产阶级政权的斗争为背景创作的？", "options": ["大泽乡起义", "巴黎公社", "独立战争", "赤壁之战"], "correct": "B", "correct_idx": 1}, {"q": "诗句“我劝天公重抖擞”的下一句是什么？", "options": ["不拘一格降人才", "第一宇宙速度", "万径人踪灭", "第一人称"], "correct": "A", "correct_idx": 0}, {"q": "《滕王阁序》中“物华天宝”的下一句是什么？", "options": ["仙人掌", "人杰地灵", "地球自转", "赵武灵王"], "correct": "B", "correct_idx": 1}, {"q": "在数学上“8”和“-8”被称为一对什么数？", "options": ["汪伦", "相反数", "琵琶", "寇准"], "correct": "B", "correct_idx": 1}, {"q": "在数学中，除了0之外，所有数字的0次方是几？", "options": ["3", "48", "1", "0.8"], "correct": "C", "correct_idx": 2}, {"q": "“三下五除二”是使用哪种工具的口诀之一？", "options": ["铁", "肖邦", "寇准", "算盘"], "correct": "D", "correct_idx": 3}, {"q": "死海位于哪个大洲？", "options": ["大洋洲", "亚洲", "中国", "欧洲"], "correct": "B", "correct_idx": 1}, {"q": "地中海气候区的雨季通常在哪个季节？", "options": ["春季", "秋季", "琵琶", "冬季"], "correct": "D", "correct_idx": 3}, {"q": "世界上最大的热带雨林气候区位于？", "options": ["塔里木河", "大渡河", "亚马孙平原", "东北平原"], "correct": "C", "correct_idx": 2}, {"q": "世界上面积最小的大洲是？", "options": ["太平洋", "欧洲", "大洋洲", "北冰洋"], "correct": "C", "correct_idx": 2}, {"q": "中国地势第一级阶梯的主要地形包括以下哪种？", "options": ["高原", "樊哙", "张骞", "苏轼"], "correct": "A", "correct_idx": 0}, {"q": "中国最大的内流河是？", "options": ["里海", "富士山", "根河", "塔里木河"], "correct": "D", "correct_idx": 3}, {"q": "有东方金字塔之称的是位于宁夏的哪个陵园？", "options": ["山西省", "大洋洲", "西夏王陵", "塔里木河"], "correct": "C", "correct_idx": 2}, {"q": "自 1815 年以后从未被卷入任何战争，首都为伯尔尼的是哪个国家？", "options": ["护士", "报纸", "瑞士", "口腔科"], "correct": "C", "correct_idx": 2}, {"q": "我国最大的也是唯一的省级经济特区是哪个省？", "options": ["海南省", "山东省", "里海", "南宁"], "correct": "A", "correct_idx": 0}, {"q": "郭沫若的名字中包含了家乡的沫水和若水，沫水指的是哪条河流？", "options": ["遇龙河", "河北省", "大渡河", "大散关"], "correct": "C", "correct_idx": 2}, {"q": "境内拥有 400 多座火山，被称为 “火山之国” 的是哪个国家？", "options": ["印度洋", "西林寺", "亚马孙平原", "印度尼西亚"], "correct": "D", "correct_idx": 3}, {"q": "新疆八怪中 “条条井水连起来” 指的是哪种灌溉工程？", "options": ["汪伦", "坎儿井", "苏轼", "铁"], "correct": "B", "correct_idx": 1}, {"q": "历史记载最低温度曾达到 - 58℃，被称为 “中国冷极” 的是哪个城市？", "options": ["大渡河", "中国", "西夏王陵", "根河"], "correct": "D", "correct_idx": 3}, {"q": "铁饼运动员在靠近哪里比赛会容易打破纪录？", "options": ["赤道", "肖邦", "郦道元", "道尔顿"], "correct": "A", "correct_idx": 0}, {"q": "分辨率是指哪种单位长度内所包含的像素点数？", "options": ["曾任楚国令尹", "英寸", "英国", "肖邦"], "correct": "B", "correct_idx": 1}, {"q": "我们常说的吃红枣补血的原理是红枣里含有哪种元素？", "options": ["碳酸钙", "碳酸氢钠", "三氧化二砷", "铁"], "correct": "D", "correct_idx": 3}, {"q": "含羞草会动的原因是叶子会产生什么作用？", "options": ["膨压作用", "肖邦", "大气压强", "琵琶"], "correct": "A", "correct_idx": 0}, {"q": "有“万能细胞”之称，能够再生成为其他类型的是哪种细胞？", "options": ["肖邦", "干细胞", "体细胞，无性", "毛细血管"], "correct": "B", "correct_idx": 1}, {"q": "物理学中三大守恒定律指的是动量守恒、角动量守恒和什么？", "options": ["能量守恒", "口腔科", "报纸", "琵琶"], "correct": "A", "correct_idx": 0}, {"q": "我们常说泪水是咸的，是因为泪水中富含哪种离子？", "options": ["氟", "碳酸钙", "钠", "锌"], "correct": "C", "correct_idx": 2}, {"q": "被称为人体“第二大脑”的是哪个系统？", "options": ["泌尿系统", "眼睛", "耳膜", "消化系统"], "correct": "D", "correct_idx": 3}, {"q": "伽利略的“铁球实验”推翻了哪位古希腊科学家的理论？", "options": ["苏轼", "贝多芬", "孟子", "亚里士多德"], "correct": "D", "correct_idx": 3}, {"q": "奠定日后欧洲数学基础且著有《几何原本》的是哪一位古希腊学者？", "options": ["肖邦", "黄盖", "亚里士多德", "欧几里得"], "correct": "D", "correct_idx": 3}, {"q": "参照相关谚语，如果出现“山没腰”的情形，将会出现哪种天气呢？", "options": ["苏轼", "无雨", "无机盐", "报纸"], "correct": "B", "correct_idx": 1}, {"q": "如果北斗七星的斗柄朝向北方，那么这时处于哪个季节？", "options": ["琵琶", "秋季", "春季", "冬季"], "correct": "D", "correct_idx": 3}, {"q": "在生物学中，以下哪个分类包括的范围更大？", "options": ["门", "肖邦", "口腔科", "报纸"], "correct": "A", "correct_idx": 0}, {"q": "“种瓜得瓜，种豆得豆”体现了亲代与子代之间的哪种生物学现象？", "options": ["樊哙", "遗传", "琵琶", "报纸"], "correct": "B", "correct_idx": 1}, {"q": "绿色植物的哪一反应是维持地球碳氧平衡的重要条件？", "options": ["膨压作用", "肖邦", "口腔科", "光合作用"], "correct": "D", "correct_idx": 3}, {"q": "导盲犬是怎样来辨别红绿灯的？", "options": ["哥伦比亚大学", "黎明", "对比明暗", "陶渊明"], "correct": "C", "correct_idx": 2}, {"q": "在一个标准大气压下，下列气体按照密度由大到小排列正确的是？①空气 ②氧气 ③氮气", "options": ["②①③", "苏轼", "汪伦", "报纸"], "correct": "A", "correct_idx": 0}, {"q": "人一害羞就会脸红，是因为人体分泌的哪种激素增加造成的？", "options": ["我要上升", "生长激素", "维生素", "肾上腺素"], "correct": "D", "correct_idx": 3}, {"q": "与蛋白质、维生素并列的“第三营养素”叫什么名字？", "options": ["红豆", "报纸", "卵磷脂", "肖邦"], "correct": "C", "correct_idx": 2}, {"q": "由欧盟研制和建立的全球卫星导航定位系统叫什么名字？", "options": ["意大利", "伽利略系统", "樊哙", "苏轼"], "correct": "B", "correct_idx": 1}, {"q": "白炽灯用久了会发黑是因为哪种金属的升华？", "options": ["钨", "碘", "硫", "氧气"], "correct": "A", "correct_idx": 0}, {"q": "“焦耳每千克摄氏度”是哪个物理量的单位？", "options": ["电容量", "比热容", "杠杆原理", "惯性定律"], "correct": "B", "correct_idx": 1}, {"q": "常规物体只在重力的作用下，初速度为零的运动被称为什么运动？", "options": ["自由落体定律", "布朗运动", "自由落体运动", "大气压强"], "correct": "C", "correct_idx": 2}, {"q": "内燃机的工作原理是将内能转化成了什么能？", "options": ["光栅现象", "第一宇宙速度", "自由落体运动", "机械能"], "correct": "D", "correct_idx": 3}, {"q": "打嗝是因为人体的哪个组织痉挛收缩引起的？", "options": ["舌头", "血管", "眼睛", "横膈膜"], "correct": "D", "correct_idx": 3}, {"q": "名著《水浒传》中梁山步军头领刘唐的绰号是什么？", "options": ["赤道", "赤发鬼", "努尔哈赤", "赤道"], "correct": "B", "correct_idx": 1}, {"q": "我们用“蚕头燕尾”来形容哪种书法字体？", "options": ["象棋", "琵琶", "唢呐", "隶书"], "correct": "D", "correct_idx": 3}, {"q": "杜甫称赞哪位诗人的作品“笔落惊风雨，诗成泣鬼神”？", "options": ["李靖", "白色", "李白", "白天鹅"], "correct": "C", "correct_idx": 2}, {"q": "中国第一部以字典命名的汉字辞书是什么？", "options": ["康熙", "康熙字典", "康熙", "苏轼"], "correct": "B", "correct_idx": 1}, {"q": "“老当益壮”这个成语最早来源于的哪篇文章？", "options": ["后臀", "王后", "后汉书", "汉武帝"], "correct": "C", "correct_idx": 2}, {"q": "“天下兴亡，匹夫有责”是哪位思想家的名言？", "options": ["汪伦", "顾炎武", "梁武帝", "孟子"], "correct": "B", "correct_idx": 1}, {"q": "李清照《如梦令》中“知否？知否？应是绿肥红瘦”描绘的是哪种花？", "options": ["海棠", "黄海", "海牛", "琵琶"], "correct": "A", "correct_idx": 0}, {"q": "“遥知兄弟登高处，遍插茱萸少一人”说的是哪位诗人漂泊异乡的故事诗中所少的那一人是？", "options": ["王维", "王勃", "王之涣", "王安石"], "correct": "A", "correct_idx": 0}, {"q": "“不识庐山真面目，只缘身在此山中”是诗人写在哪座寺庙墙上的诗句？", "options": ["西林寺", "陕西省", "林", "大西洋"], "correct": "A", "correct_idx": 0}, {"q": "我国以“黑土”著称的平原是？", "options": ["东北平原", "山东省", "亚马孙平原", "太平洋"], "correct": "A", "correct_idx": 0}, {"q": "我们常说的齐鲁大地指的是哪个省？", "options": ["小重山", "泰山", "甘肃省", "山东省"], "correct": "D", "correct_idx": 3}, {"q": "世界五大洲中，平均海拔最低的洲是哪个大洲？", "options": ["亚马孙平原", "西夏王陵", "亚洲", "欧洲"], "correct": "D", "correct_idx": 3}, {"q": "我国古代，受雇凭借武功保护财物和人身安全的民间机构叫什么？", "options": ["镖局", "苏轼", "肖邦", "曾任楚国令尹"], "correct": "A", "correct_idx": 0}, {"q": "最初因歌咏项羽宠妃虞姬而得名的词牌名叫什么？", "options": ["虞美人", "萨克斯", "唢呐", "琵琶"], "correct": "A", "correct_idx": 0}, {"q": "在网站域名中，“.cn”表示中国，“.fr”表示哪个国家？", "options": ["奥斯曼帝国", "英国", "法国", "协约国"], "correct": "C", "correct_idx": 2}, {"q": "中国大陆与朝鲜半岛之间，与东海和渤海相连的是哪片海？", "options": ["黄雀", "黄海", "黄土高原", "黄鹤楼"], "correct": "B", "correct_idx": 1}, {"q": "黄河所携带的泥沙，大部分来自于哪个高原？", "options": ["黄土高原", "白鹿原", "黄鹤楼", "黄鹤楼"], "correct": "A", "correct_idx": 0}, {"q": "《封神演义》中“飞熊”是哪位人物的别号？", "options": ["姜子牙", "汪伦", "苏轼", "陈子昂"], "correct": "A", "correct_idx": 0}, {"q": "西欧的最高峰勃朗峰是哪座山上的山峰？", "options": ["阿尔卑斯山", "小重山", "华山", "山东省"], "correct": "A", "correct_idx": 0}, {"q": "指南针上的W.N.表示的是哪个方向？", "options": ["北面", "北", "琵琶", "西北"], "correct": "D", "correct_idx": 3}, {"q": "“远交近攻”是哪个丞相为秦国提出的外交策略？", "options": ["寇准", "贺知章", "苏轼", "范雎"], "correct": "D", "correct_idx": 3}, {"q": "乾隆时期建造完成，也是四库全书馆的所在地是哪个藏书楼？", "options": ["卫青", "文渊阁", "樊哙", "陶渊明"], "correct": "B", "correct_idx": 1}, {"q": "中国四大石窟之一，位于甘肃省天水市的是哪个石窟？", "options": ["广州和佛山", "泰山", "麦积山石窟", "山西省"], "correct": "C", "correct_idx": 2}, {"q": "俄罗斯的哪个城市是北冰洋沿岸最大港口城市？", "options": ["俄罗斯", "阿尔卑斯山", "摩尔曼斯克", "萨克斯"], "correct": "C", "correct_idx": 2}, {"q": "清朝哪位皇帝在位时期用计谋擒获了号称满洲第一勇士的鳌拜？", "options": ["张骞", "卫青", "黄盖", "康熙"], "correct": "D", "correct_idx": 3}, {"q": "现在河南的开封市，在北宋作为国都时叫做什么？", "options": ["东京", "北京", "亚洲", "山东省"], "correct": "A", "correct_idx": 0}, {"q": "历史上著名的长平之战中，最后战胜赵国的秦国将领是谁？", "options": ["白起", "白天鹅", "哥白尼", "白求恩"], "correct": "A", "correct_idx": 0}, {"q": "战国时期推行“胡服骑射”的是哪位赵国君王？", "options": ["王之涣", "王维", "赵武灵王", "周厉王"], "correct": "C", "correct_idx": 2}, {"q": "明太祖追封为了哪位人物为“中山王”？", "options": ["苏轼", "徐达", "黄盖", "卫青"], "correct": "B", "correct_idx": 1}, {"q": "“周公解梦”中的“周公”的本名叫什么？", "options": ["姬旦", "口腔科", "孟子", "汪伦"], "correct": "A", "correct_idx": 0}, {"q": "秦末著名将领项梁与项羽是什么亲戚关系？", "options": ["肖邦", "报纸", "叔侄", "樊哙"], "correct": "C", "correct_idx": 2}, {"q": "清朝初期“三藩之乱”中平西王是谁？", "options": ["肖邦", "吴国", "郑成功", "吴三桂"], "correct": "D", "correct_idx": 3}, {"q": "我国历史上著名而神秘的西夏王朝的开国皇帝是谁？", "options": ["李鸿章", "李时珍", "李元昊", "李鸿章"], "correct": "C", "correct_idx": 2}, {"q": "中国历史上著名的才女蔡文姬的父亲是哪位著名的汉朝大儒？", "options": ["黄盖", "樊哙", "高原", "蔡邕"], "correct": "D", "correct_idx": 3}, {"q": "吴越争霸时,越国的都城在今天浙江省的哪个城市?", "options": ["绍兴", "汪伦", "曾任楚国令尹", "袁绍"], "correct": "A", "correct_idx": 0}, {"q": "汉朝末年的黄巾军起义中，自称“天公将军”的是哪个起义领导人？", "options": ["汪伦", "张角", "张飞穿针", "张大千"], "correct": "B", "correct_idx": 1}, {"q": "曾与岳飞、张煌言并称“西湖三杰”的是明朝哪位著名民族英雄？", "options": ["黄盖", "卫青", "樊哙", "于谦"], "correct": "D", "correct_idx": 3}, {"q": "旅行家徐霞客最后一次出游的最后一站是在今天云南省的哪座城市？", "options": ["红豆", "腾冲", "苏轼", "铁"], "correct": "B", "correct_idx": 1}, {"q": "历史上著名的“八王之乱”发生在哪个朝代？", "options": ["陕西省", "西晋", "山西省", "西北"], "correct": "B", "correct_idx": 1}, {"q": "三峡西起白帝城，请问白帝城在哪个直辖市？", "options": ["海南省", "重庆", "大洋洲", "重庆市"], "correct": "B", "correct_idx": 1}, {"q": "东汉时期被称为建业的是现在我国的哪个城市？", "options": ["海南五指山", "东京", "南京", "南宁"], "correct": "C", "correct_idx": 2}, {"q": "我国清朝的太祖高皇帝，皇太极的父亲叫什么？", "options": ["努尔哈赤", "凡尔赛宫", "黑格尔", "厄瓜多尔"], "correct": "A", "correct_idx": 0}, {"q": "卢沟桥上的“卢沟晓月”石碑是清朝哪位皇帝题写的？", "options": ["寇准", "琵琶", "肖邦", "乾隆"], "correct": "D", "correct_idx": 3}, {"q": "成都的哪座祠堂是中国唯一一座君臣合祀祠庙？", "options": ["樊哙", "顾炎武", "武则天", "武侯祠"], "correct": "D", "correct_idx": 3}, {"q": "与孙子并称“孙吴”，并著有《吴子》的战国军事家是谁？", "options": ["卫青", "吴三桂", "吴起", "白起"], "correct": "C", "correct_idx": 2}, {"q": "中国五大戏曲中的评剧产生于哪个省？", "options": ["河北省", "大渡河", "广东省", "山西省"], "correct": "A", "correct_idx": 0}, {"q": "被誉为“百戏之祖”的昆曲发源于现在江苏省的哪个城市？", "options": ["苏秦", "苏轼", "苏东坡", "苏州"], "correct": "D", "correct_idx": 3}, {"q": "被誉为“千古词帝”的南唐皇帝“李后主”叫什么名字？", "options": ["李煜", "李靖", "李白", "肖邦"], "correct": "A", "correct_idx": 0}, {"q": "秦始皇的长子，与蒙恬一起防御匈奴的是哪位历史人物？", "options": ["苏轼", "苏州", "扶苏", "苏轼"], "correct": "C", "correct_idx": 2}, {"q": "战国时期，哪位字“季子”著名的纵横家曾游说六国“合纵抗秦”？", "options": ["苏洵", "苏轼", "苏东坡", "苏秦"], "correct": "D", "correct_idx": 3}, {"q": "西汉时期哪位皇帝为避免重蹈七国之乱而颁布了“推恩令”？", "options": ["顾炎武", "关汉卿", "汉武帝", "武威"], "correct": "C", "correct_idx": 2}, {"q": "被誉为“科学原子论之父”，也是最初发现色盲症的科学家是谁？", "options": ["道尔顿", "寇准", "苏轼", "黑格尔"], "correct": "A", "correct_idx": 0}, {"q": "成语“运筹帷幄”说的是汉高祖刘邦的哪位著名谋臣？", "options": ["张良", "张大千", "张郃", "苏轼"], "correct": "A", "correct_idx": 0}, {"q": "一战结束后的巴黎和会上的“三巨头”之一，时任英国首相的人是谁？", "options": ["劳合·乔治", "苏轼", "曾任楚国令尹", "汪伦"], "correct": "A", "correct_idx": 0}, {"q": "由唐玄奘口述，弟子“辩机”实录的描述西域见闻实录的著作叫什么？", "options": ["北大西洋暖流", "大唐西域记", "印度尼西亚", "西夏王陵"], "correct": "B", "correct_idx": 1}, {"q": "“美丽草原，天骄故里”是哪个少数民族自治区的旅游宣传口号？", "options": ["口腔科", "内蒙古", "肖邦", "汪伦"], "correct": "B", "correct_idx": 1}, {"q": "京剧《失·空·斩》包括《空城计》、《斩马谡》和哪个剧目？", "options": ["苏轼", "寇准", "失街亭", "报纸"], "correct": "C", "correct_idx": 2}, {"q": "为赞颂拿破仑所作的名曲《第三交响乐》是哪位音乐家的作品？", "options": ["苏轼", "贝多芬", "高原", "寇准"], "correct": "B", "correct_idx": 1}, {"q": "又名“圆舞”，起源于奥地利农民舞蹈“水波舞”的是哪种舞蹈形式？", "options": ["华尔兹", "琵琶", "京剧", "电子琴"], "correct": "A", "correct_idx": 0}, {"q": "我国第一所独立的高等音乐学府位于哪个城市？", "options": ["上海", "大洋洲", "塔里木河", "海南五指山"], "correct": "A", "correct_idx": 0}, {"q": "英雄树、攀枝花、烽火树都是以下哪种树木的别称？", "options": ["乌鲁木齐", "汪伦", "木棉", "塔里木河"], "correct": "C", "correct_idx": 2}, {"q": "烹调所用的“五香”是指茴香、丁香、八角、桂皮和哪种香料？", "options": ["花椒", "面条", "醋", "油条"], "correct": "A", "correct_idx": 0}, {"q": "达达尼昂是哪部西方著名小说中的主人公？", "options": ["三个火枪手", "北纬三十度", "三体", "直角三角形"], "correct": "A", "correct_idx": 0}, {"q": "哪位宋代文人的作品因影响之广而被誉为“有井水处就有人传唱”？", "options": ["高原", "张骞", "柳永", "寇准"], "correct": "C", "correct_idx": 2}, {"q": "经典著作《中国人的修养》是哪一位近代教育家的作品？", "options": ["孟子", "蔡邕", "蔡元培", "苏轼"], "correct": "C", "correct_idx": 2}, {"q": "《一夜帖》是哪位宋朝书法家的代表作之一？", "options": ["黄盖", "苏东坡", "苏轼", "寇准"], "correct": "C", "correct_idx": 2}, {"q": "茅盾的作品《春蚕》《秋收》《残冬》被合称为什么？", "options": ["北纬三十度", "农村三部曲", "直角三角形", "三台云水"], "correct": "B", "correct_idx": 1}, {"q": "工业革命的发祥地是在欧洲的哪一个国家？", "options": ["海南省", "德国", "英国", "大洋洲"], "correct": "C", "correct_idx": 2}, {"q": "1944年，德国首次使用V-1火箭空袭的目标是哪座城市？", "options": ["大渡河", "塔里木河", "伦敦", "亚马孙平原"], "correct": "C", "correct_idx": 2}, {"q": "澎湖巡检司是元朝设立来管辖我国哪个地区的机构？", "options": ["台湾地区", "大洋洲", "大渡河", "中国"], "correct": "A", "correct_idx": 0}, {"q": "俗语中常说，人过留名，什么过留声？", "options": ["肖邦", "大雁", "雁", "口腔科"], "correct": "C", "correct_idx": 2}, {"q": "1940年，希特勒制定了从海上入侵英国的计划叫什么？", "options": ["巴黎公社", "独立战争", "安史之乱", "海狮计划"], "correct": "D", "correct_idx": 3}, {"q": "王勃笔下的“物华天宝，人杰地灵”形容的是哪座城市？", "options": ["海南五指山", "南宁", "南昌", "塔里木河"], "correct": "C", "correct_idx": 2}, {"q": "以下哪位清朝皇帝幼年患过天花？", "options": ["康熙", "高原", "张骞", "郑成功"], "correct": "A", "correct_idx": 0}, {"q": "“提灯女神”南丁格尔的职业是什么？", "options": ["口腔科", "护士", "殿阁大学士", "莎士比亚"], "correct": "B", "correct_idx": 1}, {"q": "如果“走走停停”对应“1122”，那么“12231231”最有可能与下列哪项对应？", "options": ["张飞", "走停停飞走停飞走", "张飞穿针", "口腔科"], "correct": "B", "correct_idx": 1}, {"q": "加号前后的数字被称为“加数”，乘号前后的数字被称为什么？", "options": ["琵琶", "肖邦", "铁", "因数"], "correct": "D", "correct_idx": 3}, {"q": "一个图形绕任意一点顺时针旋转多少度后都能与原图形重合？", "options": ["3m/s", "360", "90", "5"], "correct": "B", "correct_idx": 1}, {"q": "世界三大数学猜想是指四色猜想、哥德巴赫猜想和什么？", "options": ["马嵬坡", "马", "费马猜想", "琵琶"], "correct": "C", "correct_idx": 2}, {"q": "一块运转正常的普通钟表上，哪根指针的转动速度最慢？", "options": ["曾任楚国令尹", "时针", "苏轼", "琵琶"], "correct": "B", "correct_idx": 1}, {"q": "我国哪个省份是与外国接壤边境线最短的省份？", "options": ["富士山", "河北省", "甘肃省", "广东省"], "correct": "C", "correct_idx": 2}, {"q": "中国的澜沧江与缅甸的湄公河属于什么关系？", "options": ["河北省", "同一条河流不同河段", "不拘一格降人才", "大渡河"], "correct": "B", "correct_idx": 1}, {"q": "哪个海峡被誉为西方的 “世界油阀”？", "options": ["霍尔木兹海峡", "摩尔曼斯克", "阿尔卑斯山", "海棠"], "correct": "A", "correct_idx": 0}, {"q": "被称为 “魔鬼三角洲” 的百慕大三角洲位于哪个大洋？", "options": ["山西省", "西林寺", "太平洋", "大西洋"], "correct": "D", "correct_idx": 3}, {"q": "如果小飞想去祖国的最东端旅游，她应该去以下哪个地方？", "options": ["中国", "富士山", "中途岛", "黑瞎子岛"], "correct": "D", "correct_idx": 3}, {"q": "“三山夹两盆” 常用于形容新疆的地形，“三山” 中最北侧的是什么山脉？", "options": ["凡尔赛宫", "恒山", "山东半岛", "阿尔泰山"], "correct": "D", "correct_idx": 3}, {"q": "世界上唯一一座中轴线从未变动过的城市是哪个？", "options": ["海南省", "大渡河", "开封", "华山"], "correct": "C", "correct_idx": 2}, {"q": "我国所有土地利用类型中，占比最大的是哪类？", "options": ["草地", "草酸溶液", "草船借箭", "艾草"], "correct": "A", "correct_idx": 0}, {"q": "长江、黄河被称为 “中华母亲河”，哪个山系被称为 “中华父亲山”？", "options": ["秦岭", "郑成功", "秦国", "苏轼"], "correct": "A", "correct_idx": 0}, {"q": "小飞想去南极旅行，如果他想走最近的路到达南极，那么他需要从阿根廷的哪个城市出发？", "options": ["印度尼西亚", "乌斯怀亚", "乌鸦", "莎士比亚"], "correct": "B", "correct_idx": 1}, {"q": "如果小飞从北京坐火车沿京广线到广州，出京后经过的第一个省会城市是哪里？", "options": ["寇准", "石家庄", "孟子", "王安石"], "correct": "B", "correct_idx": 1}, {"q": "《西游记》中唐僧是如来佛祖的哪位弟子转世？", "options": ["陈子昂", "金蝉子", "孔子", "孟子"], "correct": "B", "correct_idx": 1}, {"q": "西亚号称 “五海三洲之地”，那么 “五海” 中的哪个海实际上是内陆湖泊？", "options": ["里海", "塔里木河", "亚马孙平原", "克里姆林宫"], "correct": "A", "correct_idx": 0}, {"q": "雷雨过后空气清新，是因为哪种气体的含量增加了？", "options": ["臭氧", "锌", "碳酸钙", "氧气"], "correct": "A", "correct_idx": 0}, {"q": "在自然界中有“智慧元素”美称的是哪种元素？", "options": ["铁", "碳酸钙", "酒精", "碘"], "correct": "D", "correct_idx": 3}, {"q": "经典曲目《回家》原曲是用哪一种西洋吹奏乐器演奏的？", "options": ["唢呐", "上下结构", "书法", "萨克斯"], "correct": "D", "correct_idx": 3}, {"q": "危险物品上易燃物品一般会被标上什么符号？", "options": ["金华火腿", "琵琶", "火焰", "樊哙"], "correct": "C", "correct_idx": 2}, {"q": "观赏植物万重山是属于哪个科的多肉植物？", "options": ["仙人掌", "日久见人心", "万径人踪灭", "以貌取人"], "correct": "A", "correct_idx": 0}, {"q": "世界三大火腿中产于中国的是哪一个品种？", "options": ["肖邦", "金华火腿", "郑成功", "樊哙"], "correct": "B", "correct_idx": 1}, {"q": "鲁迅先生曾因思念朋友而跟什么动物打过架？", "options": ["长颈鹿", "鲤鱼", "海牛", "猪"], "correct": "D", "correct_idx": 3}, {"q": "鸭子脚趾间的薄膜叫什么？", "options": ["汪伦", "樊哙", "苏轼", "蹼"], "correct": "D", "correct_idx": 3}, {"q": "以下哪种四川小吃与云吞、馄饨相似？", "options": ["抄手", "热干面", "花青素", "西兰花"], "correct": "A", "correct_idx": 0}, {"q": "我们平时吃得猪肚是猪的哪个器官？", "options": ["胃", "小腿", "舌头", "脚"], "correct": "A", "correct_idx": 0}, {"q": "唯一载入《中国药典》的枸杞品种是用哪个省级行政区命名的？", "options": ["曾任楚国令尹", "西夏王陵", "宁夏", "汪伦"], "correct": "C", "correct_idx": 2}, {"q": "名景“香山红叶”中的红叶是哪种树的叶子？", "options": ["口腔科", "枫树", "植树节", "苏轼"], "correct": "B", "correct_idx": 1}, {"q": "奥运比赛中“铁人三项”是由自行车、长跑和哪个项目组成？", "options": ["肖邦", "曾任楚国令尹", "游泳", "陆游"], "correct": "C", "correct_idx": 2}, {"q": "以下哪种宝石不属于有机宝石？", "options": ["肖邦", "寇准", "樊哙", "翡翠"], "correct": "D", "correct_idx": 3}, {"q": "我国将哪种经典的古代乐器作为国家的乐徽标志？", "options": ["琵琶", "象棋", "射箭", "排箫"], "correct": "D", "correct_idx": 3}, {"q": "按照江西、广西、贵州等省份人们的语言习惯，饼类食物会被俗称为什么？", "options": ["甘蔗", "西兰花", "芋头", "粑粑"], "correct": "D", "correct_idx": 3}, {"q": "新鲜牛肉出现的类似彩虹的反光是因为什么造成的？", "options": ["杠杆原理", "化学能", "比热容", "光栅现象"], "correct": "D", "correct_idx": 3}, {"q": "在藏语中，“亚拉索”一般指什么意思？", "options": ["汪伦", "啊！", "红豆", "口腔科"], "correct": "B", "correct_idx": 1}, {"q": "福建地区的著名小吃“土笋冻”其实是以什么为原料制成的？", "options": ["面条", "甘蔗", "海泥虫", "醋"], "correct": "C", "correct_idx": 2}, {"q": "在研墨时，加入哪种生活中常见的调料能使写出的毛笔字不易褪色？", "options": ["芋头", "炮", "油条", "醋"], "correct": "D", "correct_idx": 3}, {"q": "我们俗称的“二刀肉”指的是靠近猪身上哪个部位的一块肉？", "options": ["后臀", "生日", "甘蔗", "芋头"], "correct": "A", "correct_idx": 0}, {"q": "哪种老虎是我国特有的？", "options": ["画眉", "猪", "华南虎", "火光"], "correct": "C", "correct_idx": 2}, {"q": "以下哪位历史人物与唐代传奇风尘三侠有关？", "options": ["李鸿章", "李靖", "苏轼", "肖邦"], "correct": "B", "correct_idx": 1}, {"q": "孙子兵法四字真言“风林火山”中说的展开行军时要像什么？", "options": ["西夏王陵", "林", "富士山", "亚马孙平原"], "correct": "B", "correct_idx": 1}, {"q": "“大风起兮云飞扬”的《大风歌》是哪位古代帝王的作品？", "options": ["刘铭传", "樊哙", "刘邦", "寇准"], "correct": "C", "correct_idx": 2}, {"q": "“惊天动地”这个成语是对哪位诗人的赞扬？", "options": ["李白", "白鹿原", "白天鹅", "李元昊"], "correct": "A", "correct_idx": 0}, {"q": "“存在即合理”是哪位德国哲学家的名言？", "options": ["汪伦", "黑格尔", "樊哙", "肖邦"], "correct": "B", "correct_idx": 1}, {"q": "“法者天下之公器也，变者天下之公理也”是哪位近代大贤的名言？", "options": ["梁启超", "苏轼", "郑成功", "孟子"], "correct": "A", "correct_idx": 0}, {"q": "罗马神话中掌管极光和曙光的女神是谁？", "options": ["阿拉斯加", "欧若拉", "苏轼", "欧洲"], "correct": "B", "correct_idx": 1}, {"q": "关羽水淹七军的故事发生在现在的哪个省份境内？", "options": ["未名湖", "湖北", "千岛湖", "西北"], "correct": "B", "correct_idx": 1}, {"q": "虎门销烟的故事发生在现在的哪个省份境内？", "options": ["广东", "狗", "三角龙", "鲤鱼"], "correct": "A", "correct_idx": 0}, {"q": "太阳王路易十四执政后将皇室中心迁到了哪个宫殿内？", "options": ["中国", "阿尔卑斯山", "海南省", "凡尔赛宫"], "correct": "D", "correct_idx": 3}, {"q": "梁启超曾点评哪位近代名人说“敬其才，惜其识，悲其遇”？", "options": ["贺知章", "李鸿章", "贺知章", "李白"], "correct": "B", "correct_idx": 1}, {"q": "“四十二年如梦觉，春风吹泪过昭陵”赞颂的是哪位皇帝的功绩？", "options": ["宗泽", "肖邦", "宋仁宗", "汪伦"], "correct": "C", "correct_idx": 2}, {"q": "纽约最早是由哪个国家在北美建立的殖民地？", "options": ["亚特兰大", "日德兰", "荷兰", "报纸"], "correct": "C", "correct_idx": 2}, {"q": "由黎锦晖创作的歌曲《老虎叫门》其实是我们常听到的哪首儿歌？", "options": ["狗", "画眉鸟", "五禽戏", "小兔子乖乖"], "correct": "D", "correct_idx": 3}, {"q": "一战期间的哪一场海战被视作是战列舰时代最大且是最后一次舰队决战？", "options": ["日本", "西兰花", "日德兰", "歌德"], "correct": "C", "correct_idx": 2}, {"q": "“执剑人”、“面壁者”都是刘慈欣哪部科幻小说中的人物设定？", "options": ["农村三部曲", "钱三强", "三分", "三体"], "correct": "D", "correct_idx": 3}, {"q": "俗语中常说“人心齐”的下一句是哪座山会被移？", "options": ["泰山移", "山西", "泰拳", "山西省"], "correct": "A", "correct_idx": 0}, {"q": "佛教中的哪一个称呼是从梵文中的“老师”一词音译而来？", "options": ["寇准", "石墨和黏土", "和尚", "琵琶"], "correct": "C", "correct_idx": 2}, {"q": "李煜名篇《春花秋月何时了》所填的是哪一个词牌？", "options": ["虞美人", "象棋", "京剧", "琵琶"], "correct": "A", "correct_idx": 0}, {"q": "北伐战争中脍炙人口的歌谣“打倒列强”跟现在的哪首儿歌同调？", "options": ["华南虎", "七八  两三", "两只老虎", "报纸"], "correct": "C", "correct_idx": 2}, {"q": "小名“寄奴”，被誉为“南朝第一帝”的是哪个皇帝？", "options": ["肖邦", "寇准", "刘邦", "刘裕"], "correct": "D", "correct_idx": 3}, {"q": "对联“生死一知己，存亡两妇人”中的知己说的是哪位历史人物？", "options": ["卫青", "萧何", "黄盖", "孟子"], "correct": "B", "correct_idx": 1}, {"q": "“用韵以统字，用字以系事”指的哪本古代百科全书著作？", "options": ["永乐大典", "大脑", "焦大", "大渡河"], "correct": "A", "correct_idx": 0}, {"q": "杜牧诗中“南朝四百八十寺”讽喻的是哪位崇佛出家的南朝皇帝？", "options": ["梁武帝", "武则天", "梁启超", "梁启超"], "correct": "A", "correct_idx": 0}, {"q": "在我国古代传说中寿命最长的人是哪位道家先驱人物？", "options": ["彭祖", "寇准", "汪伦", "孟子"], "correct": "A", "correct_idx": 0}, {"q": "《哭晁卿衡》是哪位诗人祭奠遣唐使晁衡写下的名作？", "options": ["李鸿章", "李元昊", "李白", "白起"], "correct": "C", "correct_idx": 2}, {"q": "《三国演义》中的“蜀汉三老将”分别指的是严颜、黄忠和谁？", "options": ["张骞", "汪伦", "寇准", "廖化"], "correct": "D", "correct_idx": 3}, {"q": "我国历史上的西夏国是由哪个少数民族建立的？", "options": ["曾任楚国令尹", "项庄", "党项", "琵琶"], "correct": "C", "correct_idx": 2}, {"q": "西汉时有“一朝中兴之主”美誉的是哪位流落过民间的帝王？", "options": ["汉武帝", "琵琶", "汉宣帝", "炎帝"], "correct": "C", "correct_idx": 2}, {"q": "“乐府双璧”指的是《木兰诗》和哪部作品？", "options": ["南京", "东北平原", "孔雀东南飞", "山东省"], "correct": "C", "correct_idx": 2}, {"q": "成语“飞黄腾达”中的“飞黄”是传说中的哪种神兽？", "options": ["马", "画眉", "猪", "神马"], "correct": "D", "correct_idx": 3}, {"q": "成语“金蝉脱壳”中的“壳”在生物学上来说是指蝉的什么部位？", "options": ["报纸", "外骨骼", "紫外线", "曾任楚国令尹"], "correct": "B", "correct_idx": 1}, {"q": "宋代时期称为“文人四艺”的分别是烧香、点茶、挂画和哪个技艺？", "options": ["西兰花", "报纸", "琵琶", "插花"], "correct": "D", "correct_idx": 3}, {"q": "我国的民族乐器中，以竹林七贤中的人物姓氏命名的是哪种？", "options": ["唢呐", "射箭", "雕版印刷术", "阮"], "correct": "D", "correct_idx": 3}, {"q": "“羽之神勇，千古无二”是对哪位著名武将的评价？", "options": ["黄盖", "项羽", "郑成功", "关羽"], "correct": "B", "correct_idx": 1}, {"q": "古诗“明月皎夜光，促织鸣东壁”中“促织”指哪种昆虫？", "options": ["画眉", "蟋蟀", "火光", "五禽戏"], "correct": "B", "correct_idx": 1}, {"q": "我国古代会将哪种天文学概念称为 “星汉”？", "options": ["中国", "大渡河", "富士山", "银河"], "correct": "D", "correct_idx": 3}, {"q": "我国古代称风筝为“纸鸢”，请问“鸢”是哪种动物的俗称？", "options": ["老鹰", "长颈鹿", "老虎", "画眉"], "correct": "A", "correct_idx": 0}, {"q": "刘备托孤的历史典故发生在当时的哪个城市？", "options": ["白色", "白求恩", "白帝城", "哥白尼"], "correct": "C", "correct_idx": 2}, {"q": "唐代谚语“扬一益二”中的益州指的是今天西南的哪座城市？", "options": ["成都", "西林寺", "大渡河", "华山"], "correct": "A", "correct_idx": 0}, {"q": "“峰回路转” 最先是欧阳修对哪座山的形容？", "options": ["琅琊山", "小重山", "泰山", "山西省"], "correct": "A", "correct_idx": 0}, {"q": "我国古代帝王举行封禅大典的地方是哪座山？", "options": ["泰山", "阿尔泰山", "麦积山石窟", "琅琊山"], "correct": "A", "correct_idx": 0}, {"q": "乐山的 “三江汇流” 指的是青衣江、大渡河和哪条江？", "options": ["塔里木河", "富士山", "中国", "岷江"], "correct": "D", "correct_idx": 3}, {"q": "在三角形中，把大于90°小于180°的角称之为什么角？", "options": ["三角龙", "寇准", "钝角", "报纸"], "correct": "C", "correct_idx": 2}, {"q": "一根钢管长10米，第一次截去总长度的十分之三，第二次截去3米，还剩多少米？", "options": ["11", "4", "0.8", "38"], "correct": "B", "correct_idx": 1}, {"q": "在地理学中，“极高山” 指的是海拔超过多少米的山峰？", "options": ["4", "3", "1", "5000"], "correct": "D", "correct_idx": 3}, {"q": "从湖北省到我国任意一个省，中间最多需要跨越几个省？", "options": ["3", "11", "2", "3m/s"], "correct": "C", "correct_idx": 2}, {"q": "如果小飞在中国北方野游的时候迷路了，它看到岩石有一面布满了青苔，那么这一面是朝哪个方向的？", "options": ["北面", "琵琶", "北", "西北"], "correct": "C", "correct_idx": 2}, {"q": "“三秦大地” 中的 “三秦” 是指陕北，陕南和什么地方？", "options": ["中途岛", "关中", "中国", "肩关节"], "correct": "B", "correct_idx": 1}, {"q": "小飞乘坐火车前往哪个国家时，火车需要停下更换宽车轮？", "options": ["肖邦", "奥斯曼帝国", "琵琶", "俄罗斯"], "correct": "D", "correct_idx": 3}, {"q": "如果小飞从北京坐飞机到芝加哥，以最短距离来看，他会越过哪片大洋？", "options": ["北冰洋", "大洋洲", "大洋洲", "北市"], "correct": "A", "correct_idx": 0}, {"q": "“马里亚纳海沟”是亚洲与哪个洲的海上分界线？", "options": ["亚洲", "欧洲", "大洋洲", "富士山"], "correct": "C", "correct_idx": 2}, {"q": "地理学中的 “焚风效应” 通常出现在山体的哪一侧？", "options": ["苏轼", "马嵬坡", "汪伦", "背风坡"], "correct": "D", "correct_idx": 3}, {"q": "北斗七星是北半球天空的重要星象，北斗七星中最亮的是哪颗星？", "options": ["汪伦", "口腔科", "玉衡", "樊哙"], "correct": "C", "correct_idx": 2}, {"q": "被称为“中国现代天文学的摇篮”，中国人自己建立的第一个现代天文机构是哪个？", "options": ["台湾地区", "阿尔泰山", "琅琊山", "紫金山天文台"], "correct": "D", "correct_idx": 3}, {"q": "“东方的天空出现了鱼肚白”，形容的是哪个时间段的景观？", "options": ["陶渊明", "郑成功", "汪伦", "黎明"], "correct": "D", "correct_idx": 3}, {"q": "小飞的家住在大海边，那么他最有可能居住以下在哪个省？", "options": ["广东省", "广州", "东北平原", "山西省"], "correct": "A", "correct_idx": 0}, {"q": "洪崖洞、解放碑都是我国哪个直辖市的打卡景点？", "options": ["小重山", "重庆市", "重庆", "塔里木河"], "correct": "B", "correct_idx": 1}, {"q": "正在巴黎旅游的小飞可以参观到下面哪个建筑？", "options": ["埃菲尔铁塔", "摩尔曼斯克", "凡尔赛宫", "黑格尔"], "correct": "A", "correct_idx": 0}, {"q": "古时通往西域的要道“河西走廊”是因为在哪条河的西侧而得名？", "options": ["黄盖", "黄雀", "黄飞鸿", "黄河"], "correct": "D", "correct_idx": 3}, {"q": "中国最美草原之一的“呼伦贝尔草原”位于我国哪个省级行政区境内？", "options": ["内蒙古自治区", "富士山", "大洋洲", "亚马孙平原"], "correct": "A", "correct_idx": 0}, {"q": "位于索马里海域的亚丁湾是往来地中海和哪个大洋的必经之地？", "options": ["大西洋", "大洋洲", "印度洋", "亚洲"], "correct": "C", "correct_idx": 2}, {"q": "横贯了四大文明古国，哪条纬线被称为“最神秘的纬线”？", "options": ["印度尼西亚", "吴三桂", "北纬三十度", "三个火枪手"], "correct": "C", "correct_idx": 2}, {"q": "在17世纪被誉为“海上马车夫”的是哪个欧洲国家？", "options": ["波兰", "琵琶", "苏轼", "荷兰"], "correct": "D", "correct_idx": 3}, {"q": "世界上最大、最深的大洋是哪一个？", "options": ["太平洋", "印度洋", "亚洲", "东北平原"], "correct": "A", "correct_idx": 0}, {"q": "我国面积最大的平原是哪个平原？", "options": ["山东省", "太平洋", "北市", "东北平原"], "correct": "D", "correct_idx": 3}, {"q": "“坐地日行八万里”描写的是哪种地理现象？", "options": ["地图", "李自成", "天长地久", "地球自转"], "correct": "D", "correct_idx": 3}, {"q": "又称鸢都，哪座城市被誉为“世界风筝之都”？", "options": ["口腔科", "潍坊", "曾任楚国令尹", "铁"], "correct": "B", "correct_idx": 1}, {"q": "“落红不是无情物，化作春泥更护花”这一过程中，起决定作用的是什么？", "options": ["角平分线", "分解者", "杀人者死", "琵琶"], "correct": "B", "correct_idx": 1}, {"q": "俗称“苏打”“纯碱”的是哪种化学物质？", "options": ["碳酸钠", "氧气", "三氧化二砷", "稀盐酸"], "correct": "A", "correct_idx": 0}, {"q": "常温下导电性最强的金属是什么？", "options": ["氟", "臭氧", "银", "碘"], "correct": "C", "correct_idx": 2}, {"q": "“中风”一般是身体哪个部位的血管不畅而导致的？", "options": ["舌头", "大脑", "肩关节", "耳膜"], "correct": "B", "correct_idx": 1}, {"q": "成语“近朱者赤，近墨者黑”可理解为发生了哪种物理学现象？", "options": ["扩散现象", "电容量", "比热容", "化学能"], "correct": "A", "correct_idx": 0}, {"q": "要洗掉衣服上的铁锈污渍可以用以下哪种溶液？", "options": ["草酸溶液", "报纸", "口腔科", "肖邦"], "correct": "A", "correct_idx": 0}, {"q": "成语“沙里淘金”是根据物体的哪种物理属性进行判断的？", "options": ["密度", "折射", "电容量", "惯性定律"], "correct": "A", "correct_idx": 0}, {"q": "街头转炉式的爆米花大量食用可能会造成什么元素中毒？", "options": ["铁", "铅", "锌", "三氧化二砷"], "correct": "B", "correct_idx": 1}, {"q": "牛顿第一定律又被称为什么定律？", "options": ["折射", "杠杆原理", "比热容", "惯性定律"], "correct": "D", "correct_idx": 3}, {"q": "鸡蛋壳的主要化学成分是什么？", "options": ["钙", "碳酸钙", "锌", "三氧化二砷"], "correct": "B", "correct_idx": 1}, {"q": "人体内管壁最薄、口径最小的血管是什么？", "options": ["毛细血管", "黄盖", "寇准", "高原"], "correct": "A", "correct_idx": 0}, {"q": "“望梅止渴”属于生物学中的哪种神经活动？", "options": ["折射", "肖邦", "条件反射", "相反数"], "correct": "C", "correct_idx": 2}, {"q": "电视剧中经常出现“银针试毒”的桥段，其实是利用了银和哪种元素反应会变黑的原理？", "options": ["三氧化二砷", "碳酸钙", "硫", "铁"], "correct": "C", "correct_idx": 2}, {"q": "通常，人体血液中红细胞或者血红蛋白过少会造成哪种疾病？", "options": ["贫血", "汪伦", "寇准", "樊哙"], "correct": "A", "correct_idx": 0}, {"q": "DNA的分子结构通常被称为什么？", "options": ["肖邦", "双螺旋结构", "寇准", "口腔科"], "correct": "B", "correct_idx": 1}, {"q": "盥洗室里自动干手器能够感应人手是因为什么的改变?", "options": ["机械能", "杠杆原理", "自由落体运动", "电容量"], "correct": "D", "correct_idx": 3}, {"q": "过山车在下降过程中,感受最强烈的是哪个位置?", "options": ["风云一号", "最后一排", "第一宇宙速度", "不拘一格降人才"], "correct": "B", "correct_idx": 1}, {"q": "开灯睡觉会影响大脑中松果体产生的哪种激素？", "options": ["褪黑素", "虾青素", "生长激素", "虾青素"], "correct": "A", "correct_idx": 0}, {"q": "螃蟹煮熟之后变红是因为哪种色素显色导致的？", "options": ["肾上腺素", "虾青素", "花青素", "青山郭外斜"], "correct": "B", "correct_idx": 1}, {"q": "起重机用钢丝绳拉一物体匀速直线上升，在钢丝绳突然断掉后的一瞬间，物体将会怎样运动？", "options": ["村上春树", "琵琶", "继续上升", "报纸"], "correct": "C", "correct_idx": 2}, {"q": "人在过度哭泣时可能会出现四肢发麻的情况，这时要小心哪种病症出现？", "options": ["体细胞，无性", "汉中", "呼吸性碱中毒", "中途岛"], "correct": "C", "correct_idx": 2}, {"q": "生物圈的范围是水圈的绝大部份、岩石圈的表面以及哪个圈层的底部？", "options": ["大西洋", "大气层", "大洋洲", "大渡河"], "correct": "B", "correct_idx": 1}, {"q": "水结成冰时，密度会发生怎样的变化？", "options": ["小王子", "汪伦", "小重山", "变小"], "correct": "D", "correct_idx": 3}, {"q": "同样长短粗细的螺丝钉，螺纹越密，旋进木头时会更省力还是更费力？", "options": ["水的浮力", "表面张力", "以小力胜大力", "更省力"], "correct": "D", "correct_idx": 3}, {"q": "诗句 “京口瓜洲一水间” 中，“京口” 位于现今江苏哪座城市境内？", "options": ["大渡河", "富士山", "镇江", "华山"], "correct": "C", "correct_idx": 2}, {"q": "“石猴万载坐高崖，盼客归来手托腮” 描写了安徽哪座山？", "options": ["黄鹤楼", "黄色", "黄山", "黄土高原"], "correct": "C", "correct_idx": 2}, {"q": "诗句 “百里不贩樵，千里不贩籴” 描写的是哪种因素对商业的影响？", "options": ["运输成本", "自由落体运动", "汪伦", "布朗运动"], "correct": "A", "correct_idx": 0}, {"q": "乾隆六下江南五次驻足于此，并赞叹为 “第一江山春好处” 的是江苏哪座城市？", "options": ["宿迁", "寇准", "口腔科", "孟子"], "correct": "A", "correct_idx": 0}, {"q": "诗句 “尔来四万八千岁，不与秦塞通人烟” 描写的景象位于哪个地形区内？", "options": ["四川盆地", "草地", "人杰地灵", "地球公转"], "correct": "A", "correct_idx": 0}, {"q": "王之涣的千古名篇《登鹳雀楼》中的鹳雀楼位于现今哪个省？", "options": ["大西洋", "泰山", "山西省", "小重山"], "correct": "C", "correct_idx": 2}, {"q": "“五峰如指翠相连，撑起炎荒半壁天” 描写的是哪座山的景色？", "options": ["阿尔卑斯山", "南昌", "华山", "海南五指山"], "correct": "D", "correct_idx": 3}, {"q": "相传马鞍山市得名于历史上哪匹名马因思念主人而倒地自戕的故事？", "options": ["费马猜想", "驸马", "乌鸦", "乌骓马"], "correct": "D", "correct_idx": 3}, {"q": "“水旱从人，不知饥馑，时无荒年，天下谓之天府也”，这是古人对哪项水利工程的赞美？", "options": ["肖邦", "都江堰", "汪伦", "镇江"], "correct": "B", "correct_idx": 1}, {"q": "抗日战争时期的西南联大位于哪座城市？", "options": ["海南省", "西夏王陵", "大洋洲", "昆明"], "correct": "D", "correct_idx": 3}, {"q": "“战国四公子”中本名“田文”的是哪一位？", "options": ["黄盖", "孟尝君", "寇准", "樊哙"], "correct": "B", "correct_idx": 1}, {"q": "1884年哪位驻守台湾的军务大臣以少胜多率军击败法国舰队的进犯？", "options": ["刘秀", "汪伦", "刘铭传", "刘禅"], "correct": "C", "correct_idx": 2}, {"q": "在芭蕾世界中有“一只白鸟和一只红鸟”的说法，其中“白鸟”指的是哪部舞剧？", "options": ["天津", "天鹅湖", "未名湖", "大渡河"], "correct": "B", "correct_idx": 1}, {"q": "削完芋头之后手很痒，用加入了哪种调料的水洗手就可以减轻症状?", "options": ["炮", "花青素", "核桃", "醋"], "correct": "D", "correct_idx": 3}, {"q": "曾被当作观赏花卉种植，被称为“蔬菜皇冠”的是哪种植物？", "options": ["面条", "生日", "西兰花", "油条"], "correct": "C", "correct_idx": 2}, {"q": "我们通常说的“马后炮”出自哪种益智游戏？", "options": ["京剧", "书法", "琵琶", "象棋"], "correct": "D", "correct_idx": 3}, {"q": "著名民间乐曲《百鸟朝凤》是用哪种乐器演奏的？", "options": ["萨克斯", "上下结构", "电子琴", "唢呐"], "correct": "D", "correct_idx": 3}, {"q": "我们平时食用的“鸡胗”实际上是鸡的哪个内脏器官？", "options": ["横膈膜", "胃", "脚", "消化系统"], "correct": "B", "correct_idx": 1}, {"q": "魏晋至明朝年间，通常称皇帝的女婿为？", "options": ["神马", "马谡", "驸马", "马嵬坡"], "correct": "C", "correct_idx": 2}, {"q": "以下哪位历史人物入选了唐代的“武庙十哲”？", "options": ["张郃", "张角", "张良", "汪伦"], "correct": "C", "correct_idx": 2}, {"q": "以下哪位历史人物曾为《孙子兵法》做注？", "options": ["曹操", "卫青", "孟子", "曹植"], "correct": "A", "correct_idx": 0}, {"q": "以下哪一首诗词中写到了飞将军李广？", "options": ["塞纳河", "口腔科", "铁", "出塞"], "correct": "D", "correct_idx": 3}, {"q": "俗语“千里之行，始于足下”，那么俗语“千里之堤”的后半句是什么？", "options": ["樊哙", "于谦", "溃于蚁穴", "寇准"], "correct": "C", "correct_idx": 2}, {"q": "四川阿坝州是藏族和哪个少数民族的自治州？", "options": ["羌族", "苏轼", "报纸", "维吾尔族"], "correct": "A", "correct_idx": 0}, {"q": "在传统文化中，筷子的标准长度是下列哪个选项？", "options": ["六国论", "三分", "七寸六分", "七八  两三"], "correct": "C", "correct_idx": 2}, {"q": "中国职业围棋赛的最高段位是几段？", "options": ["九宫", "同一条河流不同河段", "广九线", "九段"], "correct": "D", "correct_idx": 3}, {"q": "“扬州三把刀”指的是厨刀、修脚刀和什么刀？", "options": ["理发刀", "报纸", "肖邦", "苏轼"], "correct": "A", "correct_idx": 0}, {"q": "“青、台”都是汉字的哪种结构组成方式？", "options": ["京剧", "上下结构", "唢呐", "琵琶"], "correct": "B", "correct_idx": 1}, {"q": "代表作有《奔马图》《九方皋》的是哪位近现代的画家？", "options": ["张郃", "张良", "汪伦", "张大千"], "correct": "D", "correct_idx": 3}, {"q": "歌曲《爱我中华》中，第一句歌词是什么？", "options": ["四月二十三日", "1个", "五十六个星座", "六国论"], "correct": "C", "correct_idx": 2}, {"q": "过年时，我们通常会粘贴哪种颜色的春联来寓意喜庆？", "options": ["黄", "红绿蓝", "红色", "黑色"], "correct": "C", "correct_idx": 2}, {"q": "在中国象棋里面，红黑双方都没有下面那个棋子？", "options": ["王后", "汪伦", "周幽王", "王勃"], "correct": "A", "correct_idx": 0}, {"q": "在夏季，我国气象台会用哪种颜色来代表最高级别的高温预警信号？", "options": ["红色", "黑色", "红绿蓝", "紫色"], "correct": "A", "correct_idx": 0}, {"q": "人们常说“哪种动物虽小，五脏俱全”？", "options": ["火光", "画眉鸟", "麻雀", "鲤鱼"], "correct": "C", "correct_idx": 2}, {"q": "皮脆肉美的深井烧鹅是哪个省的特色菜肴？", "options": ["广东", "芋头", "油条", "花青素"], "correct": "A", "correct_idx": 0}, {"q": "我们常用“四两拨千斤”比喻什么？", "options": ["小王子", "大西洋", "变小", "以小力胜大力"], "correct": "D", "correct_idx": 3}, {"q": "在我国传统文化中，两人生肖相同，某人比另一个人大“两轮”是指大多少岁？", "options": ["141岁", "4", "2元", "24岁"], "correct": "D", "correct_idx": 3}, {"q": "我们在看到交通信号灯黄灯亮时，表示什么含义？", "options": ["警示", "琵琶", "肖邦", "国际刑警组织"], "correct": "A", "correct_idx": 0}, {"q": "“旗亭画壁”故事描述的是王昌龄、高适和哪位诗人？", "options": ["周幽王", "汪伦", "王勃", "王之涣"], "correct": "D", "correct_idx": 3}, {"q": "苏轼、范仲淹的词作品按照体裁通常被归纳为什么宋词派别？", "options": ["苏轼", "豪放派", "红豆", "寇准"], "correct": "B", "correct_idx": 1}, {"q": "小学课文《手术台就是阵地》讲述的是谁的故事？", "options": ["白求恩", "哥白尼", "白霜杯伞", "白鹿原"], "correct": "A", "correct_idx": 0}, {"q": "我们常说的“拜倒在石榴裙下”相传来自唐明皇和谁的典故？", "options": ["郑成功", "苏轼", "汪伦", "杨玉环"], "correct": "D", "correct_idx": 3}, {"q": "文言文中“汝、尔”都是表示哪个“人称代词”？", "options": ["曾任楚国令尹", "樊哙", "寇准", "你"], "correct": "D", "correct_idx": 3}, {"q": "以下哪个诗句是以雪天为背景？", "options": ["万径人踪灭", "肖邦", "虞美人", "以貌取人"], "correct": "A", "correct_idx": 0}, {"q": "古代“二十四孝”中，留下卖身葬父美名和一段神话传说的是哪位人物？", "options": ["肖邦", "汪伦", "苏轼", "董永"], "correct": "D", "correct_idx": 3}, {"q": "哪个历史事件不是发生在我国的周朝时期？", "options": ["巴黎公社", "赤壁之战", "海狮计划", "南北战争"], "correct": "B", "correct_idx": 1}, {"q": "“令媛”是我国古代对对方什么亲属的尊称？", "options": ["寇准", "口腔科", "女儿", "红豆"], "correct": "C", "correct_idx": 2}, {"q": "高尔基曾说什么是人类进步的阶梯？", "options": ["琵琶", "口腔科", "后汉书", "书籍"], "correct": "D", "correct_idx": 3}, {"q": "名著《红楼梦》中，酒后大骂贾家“胳膊折了往袖子里藏”的宁国府老仆人叫什么？", "options": ["焦大", "大雁", "大脑", "大洋洲"], "correct": "A", "correct_idx": 0}, {"q": "孟浩然所作《过故人庄》中“绿树村边合”的下一句是什么？", "options": ["泰山", "琅琊山", "阿尔卑斯山", "青山郭外斜"], "correct": "D", "correct_idx": 3}, {"q": "名著《三国演义》中，长坂坡之战七进七出的蜀国大将是谁？", "options": ["孟子", "赵云", "樊哙", "卫青"], "correct": "B", "correct_idx": 1}, {"q": "被称为“田园诗人鼻祖”的是东晋末期的哪位诗人？", "options": ["陶渊明", "苏轼", "叶圣陶", "黎明"], "correct": "A", "correct_idx": 0}, {"q": "《麦克白》、《李尔王》是哪位英国著名作家的悲剧作品？", "options": ["卫青", "黄盖", "莎士比亚", "肖邦"], "correct": "C", "correct_idx": 2}, {"q": "著名的长篇诗剧《浮士德》是德国哪位作家的作品？", "options": ["阿基米德", "歌德", "亚里士多德", "孟子"], "correct": "B", "correct_idx": 1}, {"q": "“粉骨碎身浑不怕，要留清白在人间”，这首《石灰吟》是谁的作品？", "options": ["于谦", "苏轼", "寇准", "孟子"], "correct": "A", "correct_idx": 0}, {"q": "在名著《西游记》描绘的东海龙宫中，虾是兵，什么动物是将？", "options": ["狗", "骆驼", "蟹", "画眉鸟"], "correct": "C", "correct_idx": 2}, {"q": "《昆虫记》的作者是哪位法国著名昆虫学家？", "options": ["泰戈尔", "法布尔", "寇准", "樊哙"], "correct": "B", "correct_idx": 1}, {"q": "伽利略进行的比萨斜塔实验证明的是哪个定律？", "options": ["电容量", "自由落体定律", "光栅现象", "电阻"], "correct": "B", "correct_idx": 1}, {"q": "往盛满水的杯子中放入一颗石子，水面凸起却不会溢出，说明水的表面具有哪种力？", "options": ["惯性定律", "表面张力", "自由落体运动", "电容量"], "correct": "B", "correct_idx": 1}, {"q": "用来形容做事多此一举，反而得不偿失的是哪个寓言故事？", "options": ["寇准", "报纸", "苏轼", "画蛇添足"], "correct": "D", "correct_idx": 3}, {"q": "李白在哪个名楼上写下了诗句“孤帆远影碧空尽，唯见长江天际流”？", "options": ["黄鹤楼", "黄河", "黄河", "肖邦"], "correct": "A", "correct_idx": 0}, {"q": "“鸡鸣狗盗、狡兔三窟”都是出自“战国四君子”中哪位人物的典故？", "options": ["卫青", "苏轼", "孟子", "孟尝君"], "correct": "D", "correct_idx": 3}, {"q": "以下哪个字拼音的韵母是ie？", "options": ["寇准", "贴", "红豆", "曾任楚国令尹"], "correct": "B", "correct_idx": 1}, {"q": "世界上最早的水闸式运河是哪条秦代运河？", "options": ["铁", "口腔科", "灵渠", "樊哙"], "correct": "C", "correct_idx": 2}, {"q": "法国国王路易十四把自己成为什么王？", "options": ["沈阳", "肖邦", "太阳", "汪伦"], "correct": "C", "correct_idx": 2}, {"q": "以下哪场中国古代的战役是以少胜多的？", "options": ["巴黎公社", "虎门销烟", "赤壁之战", "南北战争"], "correct": "C", "correct_idx": 2}, {"q": "歇后语“孙膑救邯郸”的下一句是什么？", "options": ["赵武灵王", "琵琶", "围魏救赵", "报纸"], "correct": "C", "correct_idx": 2}, {"q": "诗句“我欲乘风归去，又恐琼楼玉宇”中的“我”指的是哪位诗人？", "options": ["孟子", "黄盖", "苏轼", "肖邦"], "correct": "C", "correct_idx": 2}, {"q": "三国时代占据江南地区的是哪个割据政权？", "options": ["卫青", "吴国", "樊哙", "寇准"], "correct": "B", "correct_idx": 1}, {"q": "论语中常出现的“子曰”中的“子”是谁？", "options": ["孟子", "孙子兵法", "孔子", "汪伦"], "correct": "C", "correct_idx": 2}, {"q": "诗句“黄狗身上白，白狗身上肿”描写的是什么天气情况？", "options": ["寿命仅三天", "狗", "火光", "下雪天"], "correct": "D", "correct_idx": 3}, {"q": "杜牧的《赤壁》中“东风不与周郎便”，周郎指的就是哪位三国名将？", "options": ["黄盖", "周瑜", "孟子", "郑成功"], "correct": "B", "correct_idx": 1}, {"q": "“垂涎三尺”中的“涎”是什么？", "options": ["口水", "口腔科", "跳阶跳水", "琵琶"], "correct": "A", "correct_idx": 0}, {"q": "清代由纪晓岚主持编纂的我国最大的一部百科全书叫什么？", "options": ["书法", "四川", "四库全书", "隶书"], "correct": "C", "correct_idx": 2}, {"q": "出自《论语•里仁》中的句子“见贤思齐焉”的下一句是什么？", "options": ["自由落体运动", "甘肃省", "山东省", "见不贤而内自省也"], "correct": "D", "correct_idx": 3}, {"q": "神童“仲永”出自北宋哪位著名文学家笔下的人物？", "options": ["王勃", "石榴", "赵武灵王", "王安石"], "correct": "D", "correct_idx": 3}, {"q": "在安史之乱中，传说杨贵妃自缢于哪一个发生兵变的地方？", "options": ["樊哙", "郑成功", "马嵬坡", "寇准"], "correct": "C", "correct_idx": 2}, {"q": "春秋时期著名的诸侯王“晋文公”的名字是什么？", "options": ["肖邦", "琵琶", "重庆市", "重耳"], "correct": "D", "correct_idx": 3}, {"q": "眼睛见到强光时，我们的瞳孔通常会发生什么变化？", "options": ["小王子", "以小力胜大力", "变小", "肖邦"], "correct": "C", "correct_idx": 2}, {"q": "著名雕塑《大卫》的左手正在做什么动作？", "options": ["拿投石器", "肖邦", "口腔科", "加拿大"], "correct": "A", "correct_idx": 0}, {"q": "古代绘画、丝绸的陈列室需要严格控制光线，这是为了防止什么的侵害？", "options": ["紫外线", "肖邦", "儒林外史", "琵琶"], "correct": "A", "correct_idx": 0}, {"q": "干果中含有丰富的不饱和脂肪酸，以下哪种干果的脂肪含量最高？", "options": ["花青素", "核桃", "芋头", "油条"], "correct": "B", "correct_idx": 1}, {"q": "吃菠萝会感到刺痛，是因为菠萝中含有的一种酶会分解口腔黏膜和哪个部位的蛋白质？", "options": ["脾", "泌尿系统", "消化系统", "舌头"], "correct": "D", "correct_idx": 3}, {"q": "我国哪个少数民族过年总会比汉族的春节早一天？", "options": ["维吾尔族", "土家族", "石墨和黏土", "蒙古族"], "correct": "B", "correct_idx": 1}, {"q": "相声贯口《报菜名》中，“我请您吃”的第一道菜是什么？", "options": ["西兰花", "花青素", "蒸羊羔", "生日"], "correct": "C", "correct_idx": 2}, {"q": "植物学中将雪莲花划分为哪一科？", "options": ["寇准", "口腔科", "菊科", "文科"], "correct": "C", "correct_idx": 2}, {"q": "鹦鹉因为其特殊的什么部位可以学人说话？", "options": ["胃", "舌头", "泌尿系统", "肩关节"], "correct": "B", "correct_idx": 1}, {"q": "铅笔笔芯的软硬程度是和哪种成分的含量有关？", "options": ["土家族", "石墨和黏土", "广州和佛山", "大理石"], "correct": "B", "correct_idx": 1}, {"q": "哪种调味品可以使蔬菜黄叶返绿？", "options": ["盐", "醋", "生日", "热干面"], "correct": "A", "correct_idx": 0}, {"q": "唱腔有主腔、花腔和三腔的是哪种唱词清丽的戏曲品种？", "options": ["黄飞鸿", "黄梅戏", "黄土高原", "黄河"], "correct": "B", "correct_idx": 1}, {"q": "在煎生牛排时流出的红色液体是哪种物质？", "options": ["肌红蛋白", "红色", "白帝城", "白求恩"], "correct": "A", "correct_idx": 0}, {"q": "中国象棋盘上“米”字形的方框在专业术语中被称为什么？", "options": ["九宫", "西夏王陵", "富士山", "海南省"], "correct": "A", "correct_idx": 0}, {"q": "守宫砂中的“守宫”指的是什么动物？", "options": ["壁虎", "猪", "长颈鹿", "骆驼"], "correct": "A", "correct_idx": 0}, {"q": "藏族人通常用哪句藏语表示“吉祥如意”？", "options": ["陕西省", "扎西德勒", "日德兰", "西兰花"], "correct": "B", "correct_idx": 1}, {"q": "按照我国古代农谚的总结,24节气中最热的节气是哪一个？", "options": ["大暑", "大理石", "张大千", "大气层"], "correct": "A", "correct_idx": 0}, {"q": "“花贵妃”是哪种花的别称？", "options": ["里海", "海棠", "黄海", "航海"], "correct": "B", "correct_idx": 1}, {"q": "公元十三世纪，土耳其人建立了哪个横跨三大洲的帝国？", "options": ["德国", "英国", "奥斯曼帝国", "英国"], "correct": "C", "correct_idx": 2}, {"q": "我国战国以前将锦、绣、绫、罗等丝织物称为什么？", "options": ["樊哙", "孟子", "帛", "汪伦"], "correct": "C", "correct_idx": 2}, {"q": "“走马观碑”、“目识群羊”说的都是哪位战国时期的谋略家？", "options": ["苏轼", "肖邦", "苏秦", "苏轼"], "correct": "C", "correct_idx": 2}, {"q": "“民国第一外交家”顾维钧在一战后哪场会议上代表中国拒绝签字？", "options": ["巴黎公社", "黎明", "报纸", "巴黎和会"], "correct": "D", "correct_idx": 3}, {"q": "以下哪种蘑菇是不可以食用的？", "options": ["白起", "白色", "白霜杯伞", "汪伦"], "correct": "C", "correct_idx": 2}, {"q": "杜牧的《阿房宫赋》中“戍卒叫，函谷举”指的是哪场起义？", "options": ["大泽乡起义", "巴黎公社", "诺曼底登陆", "赤壁之战"], "correct": "A", "correct_idx": 0}, {"q": "“回鹘西迁”这一历史典故中，回鹘指的是现今哪个少数民族？", "options": ["阿尔泰山", "王维", "藏族", "维吾尔族"], "correct": "D", "correct_idx": 3}, {"q": "收藏了《四库全书》的“江浙三阁”指的是文宗阁、文汇阁和杭州的哪个藏书楼？", "options": ["卫青", "文科", "文澜阁", "肖邦"], "correct": "C", "correct_idx": 2}, {"q": "《史记》记载了从黄帝开始到哪位帝王结束的3000多年历史？", "options": ["炎帝", "武侯祠", "汉武帝", "汉朝"], "correct": "C", "correct_idx": 2}, {"q": "以下哪位东汉末年诸侯的家世被誉为“四世三公”？", "options": ["张骞", "高原", "樊哙", "袁绍"], "correct": "D", "correct_idx": 3}, {"q": "被高尔基誉为世界民间文学史上“最壮丽的一座纪念碑”的是哪部故事集？", "options": ["同一条河流不同河段", "第一宇宙速度", "一千零一夜", "伊丽莎白一世"], "correct": "C", "correct_idx": 2}, {"q": "“云山苍苍，江水泱泱，先生之风，山高水长”表现了西湖十景中哪一个？", "options": ["吴三桂", "赵云", "三台云水", "三体"], "correct": "C", "correct_idx": 2}, {"q": "诗歌《和子由渑池怀旧》中“渑池”是我国哪种远古文化的发祥地？", "options": ["廖化", "琵琶", "化学能", "仰韶文化"], "correct": "D", "correct_idx": 3}, {"q": "古人曾比喻，写文章要有“凤头”“豹尾”和什么？", "options": ["猪肚", "报纸", "樊哙", "口腔科"], "correct": "A", "correct_idx": 0}, {"q": "凡尔纳的《八十天环游地球》中，主人公福格是从哪座城市出发的？", "options": ["大渡河", "西夏王陵", "中国", "伦敦"], "correct": "D", "correct_idx": 3}, {"q": "哪部百科全书式的文献集最初名为《文献大成》？", "options": ["康熙字典", "大气层", "永乐大典", "大暑"], "correct": "C", "correct_idx": 2}, {"q": "1918年辛克莱在评论小说《旅程》时将哪个心理学词汇引入了文学界？", "options": ["意识流", "口腔科", "肖邦", "琵琶"], "correct": "A", "correct_idx": 0}, {"q": "欧阳修的“始知锁向金笼听，不及林间自在啼”描写的是哪种鸟类？", "options": ["下雪", "海牛", "三角龙", "画眉"], "correct": "D", "correct_idx": 3}, {"q": "由于诗歌彰显了“汉魏风骨”而被誉为“诗骨”的是哪位初唐诗人？", "options": ["孟子", "丰子恺", "汪伦", "陈子昂"], "correct": "D", "correct_idx": 3}, {"q": "“年少而才高，官小而名大”评价的是历史上哪个“文学家天团”？", "options": ["四库全书", "初唐四杰", "肖邦", "四月二十三日"], "correct": "B", "correct_idx": 1}, {"q": "“你是光，你是热，你是二十世纪的良心”是曹禺对谁的称赞？", "options": ["苏轼", "汪伦", "巴金", "黄盖"], "correct": "C", "correct_idx": 2}, {"q": "美国作家奥尔科特的长篇小说《小妇人》是以哪个历史事件为背景创作的？", "options": ["南北战争", "法国大革命", "大泽乡起义", "赤壁之战"], "correct": "A", "correct_idx": 0}, {"q": "“r”在几何中表示什么数学符号？", "options": ["肖邦", "半径", "樊哙", "曾任楚国令尹"], "correct": "B", "correct_idx": 1}, {"q": "一张100元的人民币破损了三分之一，到银行能换多少钱？", "options": ["郦道元", "开元盛世", "50元", "0.8"], "correct": "C", "correct_idx": 2}, {"q": "班上有30名同学，至少有多少个同学在同一个月过生日？", "options": ["4", "3", "11", "38"], "correct": "B", "correct_idx": 1}, {"q": "小明花8块钱买了书，9块钱卖掉，又花10块钱买回来，11块钱又卖掉，他总共挣了多少钱？", "options": ["26", "24岁", "2元", "郦道元"], "correct": "C", "correct_idx": 2}, {"q": "数学符号“RtΔ”所代表的意义是什么？", "options": ["角平分线", "农村三部曲", "钱三强", "直角三角形"], "correct": "D", "correct_idx": 3}, {"q": "地球公转是指地球围绕哪个天体运动时的轨迹？", "options": ["琵琶", "太阳", "阳", "太尉"], "correct": "B", "correct_idx": 1}, {"q": "与二十四节气更替关系最大的是哪一项？", "options": ["草地", "地图", "棒球", "地球公转"], "correct": "D", "correct_idx": 3}, {"q": "用吸管喝饮料运用了哪种物理原理？", "options": ["杠杆原理", "惯性定律", "比热容", "大气压强"], "correct": "D", "correct_idx": 3}, {"q": "与人耳能听到的声音相比，“超声”具有较高的什么？", "options": ["电容量", "化学能", "电阻", "音调"], "correct": "D", "correct_idx": 3}, {"q": "月球永远以同一面朝向地球，在天文学中，这种现象被称为什么?", "options": ["报纸", "汪伦", "潮汐锁定", "惯性定律"], "correct": "C", "correct_idx": 2}, {"q": "在电解水实验中，正极产生的是什么气体?", "options": ["硫", "氧气", "氟", "铁"], "correct": "B", "correct_idx": 1}, {"q": "人体缺乏下列哪种元素会导致骨质疏松或佝偻病？", "options": ["钙", "三氧化二砷", "铁", "碘"], "correct": "A", "correct_idx": 0}, {"q": "在物理学中，力的三要素指的是作用点、力的大小和什么？", "options": ["更省力", "力的方向", "表面张力", "报纸"], "correct": "B", "correct_idx": 1}, {"q": "植物不会长恶性肿瘤的原因是它的细胞中含有什么结构？", "options": ["壁虎", "毛细血管", "汪伦", "细胞壁"], "correct": "D", "correct_idx": 3}, {"q": "紫外线灯能够消毒是利用了什么科学原理来消灭微生物？", "options": ["曾任楚国令尹", "汪伦", "破坏DNA结构", "报纸"], "correct": "C", "correct_idx": 2}, {"q": "桑葚、蓝莓、紫薯等紫色食物都富含哪种有助于保护视力的物质？", "options": ["芋头", "油条", "花青素", "鳝鱼"], "correct": "C", "correct_idx": 2}, {"q": "从蝌蚪到青蛙的生长发育过程在生物学上被称为什么？", "options": ["变小", "樊哙", "汪伦", "变态"], "correct": "D", "correct_idx": 3}, {"q": "可用于制造杀虫农药的砒霜的化学名称叫什么？", "options": ["碘", "酒精", "臭氧", "三氧化二砷"], "correct": "D", "correct_idx": 3}, {"q": "航天器的最小发射速度和最大运行速度在航空学中都是哪一速度的别称？", "options": ["大气压强", "密度", "第一宇宙速度", "化学能"], "correct": "C", "correct_idx": 2}, {"q": "锅庄是哪个少数民族的三大民间舞蹈之一？", "options": ["肖邦", "羌族", "藏族", "土家族"], "correct": "C", "correct_idx": 2}, {"q": "在印刷史上有“活化石”之称的是哪种印刷术？", "options": ["上下结构", "雕版印刷术", "射箭", "萨克斯"], "correct": "B", "correct_idx": 1}, {"q": "哪种鸟在繁殖期鸣叫的声音被古人拟声成“如意如意”？", "options": ["画眉鸟", "鲤鱼", "下雪", "狗"], "correct": "A", "correct_idx": 0}, {"q": "狄更斯以哪个历史事件为背景，创作了名著《双城记》？", "options": ["法国大革命", "大泽乡起义", "独立战争", "安史之乱"], "correct": "A", "correct_idx": 0}, {"q": "中国近代哪位实业家有“状元实业家”之称？", "options": ["张謇", "张骞", "张居正", "张飞"], "correct": "A", "correct_idx": 0}, {"q": "“烽火戏诸侯”说的是哪位君主为了博褒姒一笑的故事？", "options": ["王后", "王勃", "周幽王", "周瑜"], "correct": "C", "correct_idx": 2}, {"q": "华佗仿照虎、鹿、熊、猿、鸟五种动物的动作而创造的一套健身方法叫什么？", "options": ["庄子", "五禽戏", "画眉鸟", "狗"], "correct": "B", "correct_idx": 1}, {"q": "三国时项羽分封十八诸侯王，并自封为什么？", "options": ["西晋", "西楚霸王", "王后", "山西省"], "correct": "B", "correct_idx": 1}, {"q": "女皇帝武则天的执政期上承贞观之治，下启什么盛世？", "options": ["元宵节", "50元", "2元", "开元盛世"], "correct": "D", "correct_idx": 3}, {"q": "成语“管鲍之交”中的“管”指的是哪位历史人物？", "options": ["琵琶", "苏轼", "管风琴", "管仲"], "correct": "D", "correct_idx": 3}, {"q": "“将军三箭定天山，战士长歌入汉关”说的是唐朝哪位将军？", "options": ["郑成功", "黄盖", "高原", "薛仁贵"], "correct": "D", "correct_idx": 3}, {"q": "白居易的《长恨歌》中“杨家有女初长成”中的“女”指的哪位美女？", "options": ["黄盖", "杨贵妃", "孟子", "卫青"], "correct": "B", "correct_idx": 1}, {"q": "明末哪位农民起义军领袖被称为“闯王”？", "options": ["郑成功", "李靖", "李自成", "李白"], "correct": "C", "correct_idx": 2}, {"q": "收藏于中国国家博物馆的四羊方尊是哪个时期的青铜礼器？", "options": ["汉朝", "清代", "商朝", "隋"], "correct": "C", "correct_idx": 2}, {"q": "“少年强则国强，少年独立则国独立”出自梁启超的哪部散文？", "options": ["少年中国说", "三十年战争", "吴国", "法国大革命"], "correct": "A", "correct_idx": 0}, {"q": "欧洲史上著名的威斯特伐利亚条约宣告了哪场战争的结束？", "options": ["巴黎公社", "安史之乱", "三十年战争", "大泽乡起义"], "correct": "C", "correct_idx": 2}, {"q": "世界文化遗产“平遥古城”位于我国的哪个省？", "options": ["恒山", "山西省", "甘肃省", "西林寺"], "correct": "B", "correct_idx": 1}, {"q": "“陇”是我国哪个省级行政区的简称？", "options": ["甘肃省", "琵琶", "曾任楚国令尹", "甘肃"], "correct": "D", "correct_idx": 3}, {"q": "峨眉山位于我国哪个省境内？", "options": ["四月二十三日", "琵琶", "四川", "初唐四杰"], "correct": "C", "correct_idx": 2}, {"q": "“知音少，弦断有谁听”出自岳飞的哪首经典词作？", "options": ["小重山", "山西省", "山西省", "重庆"], "correct": "A", "correct_idx": 0}, {"q": "生活中常见的塑料瓶，在化学分类上属于哪个选项？", "options": ["曾任楚国令尹", "寇准", "有机物", "口腔科"], "correct": "C", "correct_idx": 2}, {"q": "以下哪个官署在古代专门负责观察天文、推算节气、制定历法？", "options": ["天狼", "琵琶", "钦天监", "天长地久"], "correct": "C", "correct_idx": 2}, {"q": "以下词汇哪个曾出现在苏东坡的家书之中？", "options": ["琵琶", "樊哙", "肖邦", "呵呵"], "correct": "D", "correct_idx": 3}, {"q": "古代欧洲，水手们出海时会携带大量橙子是为了防止什么病的发生？", "options": ["毛细血管", "破坏DNA结构", "曾任楚国令尹", "坏血症"], "correct": "D", "correct_idx": 3}, {"q": "“点睛”是舞狮和我国哪个传统民俗项目开赛前的必备仪式？", "options": ["寇准", "龙舟", "肖邦", "郑成功"], "correct": "B", "correct_idx": 1}, {"q": "演员周星驰的名字出自于哪篇古文？", "options": ["滕王阁序", "周幽王", "西楚霸王", "王勃"], "correct": "A", "correct_idx": 0}, {"q": "我国首条跨地级市的地铁连通了哪两座城市？", "options": ["广州", "山西省", "广州和佛山", "琅琊山"], "correct": "C", "correct_idx": 2}, {"q": "“我一定会回来的!”是动画片《喜羊羊与灰太狼》中谁的台词？", "options": ["下雪", "猪", "灰太狼", "画眉鸟"], "correct": "C", "correct_idx": 2}, {"q": "“翡冷翠”是诗人徐志摩对哪座意大利城市的经典翻译？", "options": ["哥伦比亚大学", "伦敦", "佛罗伦萨", "萨克斯"], "correct": "C", "correct_idx": 2}, {"q": "成语“连中三元”中“三元”中的第一场是什么考试的第一名？", "options": ["乡试", "报纸", "寇准", "曾任楚国令尹"], "correct": "A", "correct_idx": 0}, {"q": "苏东坡诗句“会挽雕弓如满月，西北望”的下一句是射什么？", "options": ["天津", "天狼", "灰太狼", "武则天"], "correct": "B", "correct_idx": 1}, {"q": "成语“相煎何急”出自于哪位三国著名诗人的作品？", "options": ["张骞", "寇准", "苏轼", "曹植"], "correct": "D", "correct_idx": 3}, {"q": "“穷且益坚，不坠青云之志”出自谁的作品？", "options": ["王勃", "王后", "周幽王", "苏轼"], "correct": "A", "correct_idx": 0}, {"q": "《诗经》中“七月流火”的下一句是“几月授衣”？", "options": ["口腔科", "汪伦", "九月", "九段"], "correct": "C", "correct_idx": 2}, {"q": "“乐不思蜀”的典故说的是哪位三国时君主的故事？", "options": ["苏轼", "汪伦", "卫青", "刘禅"], "correct": "D", "correct_idx": 3}, {"q": "抗税行为“波士顿倾茶”事件最终引发了北美地区的哪一场战争？", "options": ["赤壁之战", "大泽乡起义", "独立战争", "法国大革命"], "correct": "C", "correct_idx": 2}, {"q": "哪条注入英吉利海峡的河流被巴黎人视作母亲河？", "options": ["遇龙河", "西夏王陵", "亚马孙平原", "塞纳河"], "correct": "D", "correct_idx": 3}, {"q": "“北海渔场” 是由来自北极的寒流和哪种暖流交汇形成的？", "options": ["北大西洋暖流", "印度尼西亚", "大唐西域记", "大西洋"], "correct": "A", "correct_idx": 0}, {"q": "我们白天用肉眼看到的太阳是它的哪一层？", "options": ["光球层", "生日", "柠檬", "面条"], "correct": "A", "correct_idx": 0}, {"q": "下列哪项是欧洲与非洲的分界线？", "options": ["法布尔", "直布罗陀海峡", "俄罗斯", "海狮计划"], "correct": "B", "correct_idx": 1}, {"q": "中国最大的直辖市是？", "options": ["大渡河", "西夏王陵", "重庆", "重庆市"], "correct": "C", "correct_idx": 2}, {"q": "频率低于每秒20次的波是哪种声波？", "options": ["次声波", "化学能", "电容量", "音调"], "correct": "A", "correct_idx": 0}, {"q": "组成原子核的是质子和哪种微粒？", "options": ["孟子", "中子", "中医", "中国"], "correct": "B", "correct_idx": 1}, {"q": "水中悬浮的花粉颗粒会不停地做无规则运动，这种运动叫什么？", "options": ["化学能", "音调", "布朗运动", "杠杆原理"], "correct": "C", "correct_idx": 2}, {"q": "物理学中将摩擦力分为了静摩擦，滑动摩擦和哪种摩擦？", "options": ["大气压强", "滚动摩擦", "折射", "自由落体运动"], "correct": "B", "correct_idx": 1}, {"q": "德国科研最高奖项是以哪位学者命名的？", "options": ["法布尔", "莱布尼茨", "肖邦", "哥白尼"], "correct": "B", "correct_idx": 1}, {"q": "以下哪个成语不是源自真实的历史事件？", "options": ["寇准", "肖邦", "空城计", "报纸"], "correct": "C", "correct_idx": 2}, {"q": "章回体小说的每章惯用结尾“欲知后事如何”的下一句是什么？", "options": ["下雪", "且听下回分解", "分解者", "三分"], "correct": "B", "correct_idx": 1}, {"q": "今年小飞的年龄的两倍加上12等于爸爸的年龄48岁，小飞多少岁？", "options": ["13岁", "360", "24岁", "3m/s"], "correct": "A", "correct_idx": 0}, {"q": "中国最大的半岛是哪个半岛？", "options": ["富士山", "山东半岛", "山西省", "山东省"], "correct": "B", "correct_idx": 1}, {"q": "下列哪个城市是“世界雨极”？", "options": ["曾任楚国令尹", "汪伦", "乞拉朋齐", "琵琶"], "correct": "C", "correct_idx": 2}, {"q": "下列哪条河注入北冰洋？", "options": ["黄河", "叶尼塞河", "孟子", "肖邦"], "correct": "B", "correct_idx": 1}, {"q": "“龙飞凤舞”是用来形容哪种中国传统艺术的成语？", "options": ["书法", "油画", "琵琶", "萨克斯"], "correct": "A", "correct_idx": 0}, {"q": "“献哈达”是我国藏族和哪个少数民族用来表示敬意和祝贺的仪式？", "options": ["维吾尔族", "赫哲族", "土家族", "蒙古族"], "correct": "D", "correct_idx": 3}, {"q": "被明代大旅行家徐霞客惊叹为“天下巨观”的悬空寺位于哪座名山上？", "options": ["山西省", "琅琊山", "恒山", "麦积山石窟"], "correct": "C", "correct_idx": 2}, {"q": "米开朗基罗的雕塑作品“大卫”是以哪种材质雕刻创作的？", "options": ["石家庄", "大理石", "理发刀", "大洋洲"], "correct": "B", "correct_idx": 1}, {"q": "民歌歌词“芬芳美丽满枝桠，又香又白人人夸”指的是哪种花？", "options": ["茉莉花", "花", "西兰花", "花椒"], "correct": "A", "correct_idx": 0}, {"q": "成语“不胫而走”的\"胫\"是指身体哪个部位？", "options": ["脾", "小腿", "胃", "消化系统"], "correct": "B", "correct_idx": 1}, {"q": "驰名中外的岐山臊子面是我国哪个省的特色美食？", "options": ["陕西省", "大西洋", "山西省", "甘肃省"], "correct": "A", "correct_idx": 0}, {"q": "歇后语“兔子尾巴”的下半句是什么？", "options": ["长不了", "生长激素", "不拘一格降人才", "同一条河流不同河段"], "correct": "A", "correct_idx": 0}, {"q": "我国两大糖料作物指的是北方的甜菜和南方的什么？", "options": ["甘蔗", "鳝鱼", "醋", "芋头"], "correct": "A", "correct_idx": 0}, {"q": "世界五大宫殿中位于俄罗斯的是哪座宫殿？", "options": ["大洋洲", "克里姆林宫", "西林寺", "九宫"], "correct": "B", "correct_idx": 1}, {"q": "我国哪位历史人物被誉为“影响人类文明进程的造纸祖师”？", "options": ["黄盖", "蔡伦", "孟子", "汪伦"], "correct": "B", "correct_idx": 1}, {"q": "成语“伉俪情深”中的“伉俪”是指哪种关系的人？", "options": ["夫妻", "寇准", "汪伦", "肖邦"], "correct": "A", "correct_idx": 0}, {"q": "著名的\"伏龙芝军事学院\"位于现在哪个欧洲国家？", "options": ["报纸", "俄罗斯", "阿尔卑斯山", "佛罗伦萨"], "correct": "B", "correct_idx": 1}, {"q": "世界历史上持续时间最长的号称“百年战争”，是发生在哪两个国家之间？", "options": ["低温杀菌法", "英国", "琵琶", "英法"], "correct": "D", "correct_idx": 3}, {"q": "宋朝哪位皇帝为了加强中央集权，保护皇位，发动了“杯酒释兵权”？", "options": ["黄盖", "赵匡胤", "樊哙", "卫青"], "correct": "B", "correct_idx": 1}, {"q": "曾经当过和尚，后成为开国皇帝除了朱元璋还有谁？？？？？？？", "options": ["寇准", "卫青", "黄盖", "杨坚"], "correct": "D", "correct_idx": 3}, {"q": "荆轲见秦王时把匕首藏在什么物品里？", "options": ["地球自转", "地图", "琵琶", "吐鲁番盆地"], "correct": "B", "correct_idx": 1}, {"q": "沈雁冰的笔名“茅盾”是哪位文人帮他取的？", "options": ["樊哙", "叶圣陶", "黄盖", "郑成功"], "correct": "B", "correct_idx": 1}, {"q": "“寂寞沙洲冷”出自哪位著名诗人的诗句？", "options": ["苏东坡", "苏轼", "苏州", "苏洵"], "correct": "B", "correct_idx": 1}, {"q": "小说《呼啸山庄》是以哪种人称讲述的故事？", "options": ["一千零一夜", "第一人称", "虞美人", "最后一排"], "correct": "B", "correct_idx": 1}, {"q": "《木兰辞》中“唧唧复唧唧”指的是哪种劳动？", "options": ["报纸", "法布尔", "琵琶", "织布"], "correct": "D", "correct_idx": 3}, {"q": "“知识就是力量”是谁的名言？", "options": ["培根", "琵琶", "蔡元培", "铁"], "correct": "A", "correct_idx": 0}, {"q": "詹天佑是我国近代什么行业的工程专家？", "options": ["铁路", "埃菲尔铁塔", "口腔科", "汪伦"], "correct": "A", "correct_idx": 0}, {"q": "杜甫的诗句“泥融飞燕子，沙暖睡鸳鸯”描写了哪个季节的景色？", "options": ["冬季", "冬季", "春季", "秋季"], "correct": "C", "correct_idx": 2}, {"q": "张衡设计的地动仪感应到地震时，小球会落到什么动物嘴里？", "options": ["画眉", "蟾蜍", "下雪", "骆驼"], "correct": "B", "correct_idx": 1}, {"q": "肾脏、膀胱都属于人体哪个系统？", "options": ["舌头", "泌尿系统", "胃", "脚"], "correct": "B", "correct_idx": 1}, {"q": "“小时候用腮呼吸，长大后用肺呼吸”，这句话描述的是以下哪个动物？", "options": ["火光", "画眉鸟", "青蛙", "三角龙"], "correct": "C", "correct_idx": 2}, {"q": "“玉蜀黍”是哪种植物的学名？", "options": ["生日", "玉米", "醋", "热干面"], "correct": "B", "correct_idx": 1}, {"q": "以下哪个组织不属于人体的运动系统？", "options": ["血管", "眼睛", "脚", "肩关节"], "correct": "A", "correct_idx": 0}, {"q": "如果把人的眼睛比做照相机，那视网膜就相当于下列哪个部分？", "options": ["诺曼底登陆", "胶卷底片", "报纸", "苏轼"], "correct": "B", "correct_idx": 1}, {"q": "头发变白是由于体内的哪种生物色素减少导致的？", "options": ["黑色素", "虾青素", "白色", "紫色"], "correct": "A", "correct_idx": 0}, {"q": "在生物学上，蛋白质的基本组成单位是什么？", "options": ["氨基酸", "草酸溶液", "碳酸钙", "肖邦"], "correct": "A", "correct_idx": 0}, {"q": "进入青春期后，促使男孩长出胡须的激素是什么？", "options": ["雄性激素", "硬性铅笔", "维生素D", "花青素"], "correct": "A", "correct_idx": 0}, {"q": "赤道纪念碑所在地基多，位于那个南美国家境内？", "options": ["黑格尔", "厄瓜多尔", "多样性", "道尔顿"], "correct": "B", "correct_idx": 1}, {"q": "古称安乐水，有小漓江之称的是桂林阳朔县境内的哪条河流？", "options": ["西夏王陵", "大洋洲", "塞纳河", "遇龙河"], "correct": "D", "correct_idx": 3}, {"q": "电能产生磁场的发现者奥斯特出生于哪个国家？", "options": ["口腔科", "肖邦", "丹麦", "麦积山石窟"], "correct": "C", "correct_idx": 2}, {"q": "人体含水量百分比最高的是哪个器官？", "options": ["舌头", "眼睛", "脾", "泌尿系统"], "correct": "B", "correct_idx": 1}, {"q": "国际射箭联合会的总部设在哪个国家？", "options": ["亚里士多德", "瑞士", "报纸", "肖邦"], "correct": "B", "correct_idx": 1}, {"q": "正规篮球比赛中，完成一次投篮动作最多可得几分？", "options": ["直角三角形", "三台云水", "三分", "吴三桂"], "correct": "C", "correct_idx": 2}, {"q": "我国发射的第一颗人造气象卫星叫什么名字？", "options": ["风", "西风颂", "第一人称", "风云一号"], "correct": "D", "correct_idx": 3}, {"q": "哪个成语表达的意思与“风雨同舟”相近？", "options": ["同甘共苦", "报纸", "甘蔗", "甘肃"], "correct": "A", "correct_idx": 0}, {"q": "被誉为“天下第一秀水”的新安江水库又被称为什么湖？", "options": ["千岛湖", "富士山", "西夏王陵", "亚马孙平原"], "correct": "A", "correct_idx": 0}, {"q": "我国月球探测工程的名字是以哪个神话人物来命名的？", "options": ["肖邦", "曾任楚国令尹", "琵琶", "嫦娥"], "correct": "D", "correct_idx": 3}, {"q": "UFO是什么物体的名称缩写？", "options": ["黎明", "对比明暗", "不明飞行物", "昆明"], "correct": "C", "correct_idx": 2}, {"q": "地球绕太阳转一周大约需要多长时间？", "options": ["伊丽莎白一世", "第一宇宙速度", "三十年战争", "一年"], "correct": "D", "correct_idx": 3}, {"q": "成语“风华正茂”通常用来形容哪种年龄的人？", "options": ["花青素", "虾青素", "少年中国说", "青年"], "correct": "D", "correct_idx": 3}, {"q": "围棋的棋盘共有多少个交叉点？", "options": ["360", "147", "38", "361"], "correct": "D", "correct_idx": 3}, {"q": "北京大学内著名景点被总结为“一塔湖图”，其中“湖”指的是什么？", "options": ["西夏王陵", "未名湖", "亚马孙平原", "天鹅湖"], "correct": "B", "correct_idx": 1}, {"q": "潜水员在水下对同伴比朝上竖大拇指的动作是什么意思？", "options": ["我要上升", "上下结构", "肾上腺素", "肖邦"], "correct": "A", "correct_idx": 0}, {"q": "俗语“身体发肤”的下一句是什么？", "options": ["报纸", "受之父母", "苏轼", "寇准"], "correct": "B", "correct_idx": 1}, {"q": "纸箱上的防雨标志通常用哪种物品表示？", "options": ["雨伞", "琵琶", "无雨", "樊哙"], "correct": "A", "correct_idx": 0}, {"q": "表示做事不自量力经常会说用什么碰石头？", "options": ["鸡蛋", "樊哙", "肖邦", "寇准"], "correct": "A", "correct_idx": 0}, {"q": "斑马线一般出现在什么地方？", "options": ["口腔科", "赤道", "苏轼", "车行道"], "correct": "D", "correct_idx": 3}, {"q": "人体活动范围最大的关节是哪个？", "options": ["舌头", "脾", "肩关节", "横膈膜"], "correct": "C", "correct_idx": 2}, {"q": "“信、达、雅”是对哪项工作提出的高要求？", "options": ["苏轼", "翻译", "孟子", "口腔科"], "correct": "B", "correct_idx": 1}, {"q": "中国古代十大名曲《十面埋伏》是用哪种乐器演奏的？", "options": ["琵琶", "上下结构", "唢呐", "油画"], "correct": "A", "correct_idx": 0}, {"q": "成语“蹑手蹑脚”与哪个词的意思最为接近？", "options": ["偷偷摸摸", "肖邦", "红豆", "孟子"], "correct": "A", "correct_idx": 0}, {"q": "生活中最常见的三阶魔方的外形是什么？", "options": ["自由落体定律", "正方体", "口腔科", "为官清廉正直"], "correct": "B", "correct_idx": 1}, {"q": "“吃汤圆”、“赏花灯”都是下列哪个节日里的传统民俗？", "options": ["端午节", "元宵", "元宵节", "蔡元培"], "correct": "C", "correct_idx": 2}, {"q": "成语“路遥知马力”的下一句是什么？", "options": ["日久见人心", "万径人踪灭", "仙人掌", "开心果"], "correct": "A", "correct_idx": 0}, {"q": "古代文人所称的“怀袖雅物”是什么物件？", "options": ["扇子", "孔子", "庄子", "桃子"], "correct": "A", "correct_idx": 0}, {"q": "“章草”、“今草”、“狂草”都是哪个领域下的专业名词？", "options": ["萨克斯", "射箭", "隶书", "书法"], "correct": "D", "correct_idx": 3}, {"q": "著名的乔家大院是哪个地方商人修建的民居建筑？", "options": ["商朝", "晋商", "西晋", "琵琶"], "correct": "B", "correct_idx": 1}, {"q": "铁路运输中，“Z”字头的列车代表哪一种列车？", "options": ["第一宇宙速度", "快板", "直达特别快速", "直布罗陀海峡"], "correct": "C", "correct_idx": 2}, {"q": "俗语“得饶人处且饶人”最早是说从事什么活动时要对别人留有余地？", "options": ["且听下回分解", "下雪", "下棋", "汪伦"], "correct": "C", "correct_idx": 2}, {"q": "传说中，后裔射下九个太阳获得不老仙药后，仙药被谁偷走了？", "options": ["肖邦", "红豆", "铁", "嫦娥"], "correct": "D", "correct_idx": 3}, {"q": "生活中用画正字的方法来计算票数时，通常一个正字算几票？", "options": ["七", "48", "1", "5"], "correct": "D", "correct_idx": 3}, {"q": "“生旦净末丑”是什么艺术门类里的角色分类？", "options": ["琵琶", "唢呐", "电子琴", "京剧"], "correct": "D", "correct_idx": 3}, {"q": "古代礼仪提到“站如松”和“坐如钟”，那么“行”应当如什么？", "options": ["曾任楚国令尹", "汪伦", "口腔科", "风"], "correct": "D", "correct_idx": 3}, {"q": "我国古代丝绸之路的主要长途交通工具是哪种动物？", "options": ["长颈鹿", "火光", "骆驼", "狗"], "correct": "C", "correct_idx": 2}, {"q": "下列哪种乐器在分类上属于吹奏乐器？", "options": ["上下结构", "琵琶", "雕版印刷术", "唢呐"], "correct": "D", "correct_idx": 3}, {"q": "成语“百步穿杨”、“百发百中”都是形容古代下列哪种技术的高超？", "options": ["雕版印刷术", "射箭", "书法", "唢呐"], "correct": "B", "correct_idx": 1}, {"q": "成语“两袖清风”形容了人的哪种高贵品质？", "options": ["琵琶", "樊哙", "寇准", "为官廉洁"], "correct": "D", "correct_idx": 3}, {"q": "俗语“金窝银窝不如自家的什么窝”？", "options": ["狗", "五禽戏", "画眉鸟", "猪"], "correct": "A", "correct_idx": 0}, {"q": "哪种绘画风格不属于传统的中国画？", "options": ["琵琶", "萨克斯", "油画", "书法"], "correct": "C", "correct_idx": 2}, {"q": "将偶数与奇数相加，可以得到一个什么数字？", "options": ["汪伦", "铁", "奇数", "口腔科"], "correct": "C", "correct_idx": 2}, {"q": "两条直线如果不平行、不重叠，那么他们一定有几个交点？", "options": ["琵琶", "1个", "13岁", "1000"], "correct": "B", "correct_idx": 1}, {"q": "小明10秒内从A地走到B地，走了30米路程，他的平均速度是多少？", "options": ["3m/s", "361", "5", "4"], "correct": "A", "correct_idx": 0}, {"q": "被日本人视作国家象征的是哪个日本第一座名山？", "options": ["富士山", "阿尔卑斯山", "华山", "山西省"], "correct": "A", "correct_idx": 0}, {"q": "三角函数中，诱导公式的口诀“奇变偶不变”的下一句是什么？", "options": ["扩散现象", "口腔科", "风云一号", "符号看象限"], "correct": "D", "correct_idx": 3}, {"q": "1秒钟等于多少毫秒？", "options": ["1000", "0.8", "48", "5000"], "correct": "A", "correct_idx": 0}, {"q": "到一个三角形三条边的距离相等的点，是三角形三条什么线的交点？", "options": ["分解者", "直角三角形", "角平分线", "钝角"], "correct": "C", "correct_idx": 2}, {"q": "甲乙丙丁戊五个人坐成一排，若甲乙两人要相邻而坐，则不同的安排方案有多少种?", "options": ["3m/s", "38", "48", "4"], "correct": "C", "correct_idx": 2}, {"q": "哪个国家的人民每年会吃掉全世界将近70%的西瓜？", "options": ["中国", "法国", "亚洲", "中途岛"], "correct": "A", "correct_idx": 0}, {"q": "人民英雄纪念碑八块巨型浮雕中的第一块描绘的是近代史上的哪个事件？", "options": ["赤壁之战", "虎门销烟", "南北战争", "巴黎公社"], "correct": "B", "correct_idx": 1}, {"q": "李时珍在《本草纲目》中指出，黄瓜是由谁从西域引入？", "options": ["张良", "张大千", "张骞", "张飞"], "correct": "C", "correct_idx": 2}, {"q": "诗句“笑问客从何处来”中的“客”指的是哪位诗人？", "options": ["贺知章", "樊哙", "李鸿章", "黄盖"], "correct": "A", "correct_idx": 0}, {"q": "苏洵、苏轼、苏辙父子三人都曾创作过哪篇同名文章？", "options": ["中国", "法国", "六国论", "英国"], "correct": "C", "correct_idx": 2}, {"q": "哪位南宋诗人在其诗集中提到了自己曾杀虎除害的事迹?", "options": ["卫青", "郑成功", "肖邦", "陆游"], "correct": "D", "correct_idx": 3}, {"q": "打油诗“黑狗身上白，白狗身上肿”描述的是哪种自然现象？", "options": ["下雪天", "画眉", "骆驼", "下雪"], "correct": "D", "correct_idx": 3}, {"q": "故宫内摆放大缸的主要作用是什么？", "options": ["樊哙", "口腔科", "消防", "曾任楚国令尹"], "correct": "C", "correct_idx": 2}, {"q": "夜空中的星星看起来一闪一闪的是因为光的哪种现象？", "options": ["电容量", "杠杆原理", "大气压强", "折射"], "correct": "D", "correct_idx": 3}, {"q": "“六国破灭，弊在赂秦“是哪位宋代著名学者的观点？", "options": ["苏轼", "苏洵", "苏州", "苏轼"], "correct": "B", "correct_idx": 1}, {"q": "请根据“无字碑、狄仁杰、曌”说出一位历史人物？", "options": ["肖邦", "赵武灵王", "武则天", "寇准"], "correct": "C", "correct_idx": 2}, {"q": "世称“包龙图”的是哪位北宋名臣？", "options": ["报纸", "包拯", "苏轼", "铁"], "correct": "B", "correct_idx": 1}, {"q": "四川成都市的武侯区得名于哪位三国人物？", "options": ["汪伦", "诸葛亮", "张骞", "高原"], "correct": "B", "correct_idx": 1}, {"q": "假定工人的效率恒定，把一根钢管锯成5段需要8分钟，那么锯成20段需要几分钟？", "options": ["0.8", "七", "3", "38"], "correct": "D", "correct_idx": 3}, {"q": "炮兵每隔1分钟放1炮，10分钟共放多少炮？", "options": ["0.8", "5", "361", "11"], "correct": "D", "correct_idx": 3}, {"q": "如果小李去打靶，命中了100发，脱靶25发，请问他的命中率是多少？", "options": ["0.8", "38", "90", "4"], "correct": "A", "correct_idx": 0}, {"q": "如果一条直线和一个圆只有一个公共点，那这条线必定是这个圆的什么线？", "options": ["肖邦", "曾任楚国令尹", "切线", "广九线"], "correct": "C", "correct_idx": 2}, {"q": "如果在一种进位制中只使用“0, 1, 2, 3, 4, 5”几个数，那么这是几进制？", "options": ["七寸六分", "报纸", "六边形", "六进制"], "correct": "D", "correct_idx": 3}, {"q": "数学中我们将含有未知数的等式叫做什么？", "options": ["张骞", "黄盖", "方程式", "樊哙"], "correct": "C", "correct_idx": 2}, {"q": "数学中最小的合数是几？", "options": ["4", "48", "360", "1"], "correct": "A", "correct_idx": 0}, {"q": "一个平面中，三角形三条边中线的交点又叫做什么？", "options": ["重心", "肖邦", "口腔科", "重庆市"], "correct": "A", "correct_idx": 0}, {"q": "我们平时玩的军棋中没有出现哪种棋子？", "options": ["大洋洲", "大理石", "大炮", "炮"], "correct": "C", "correct_idx": 2}, {"q": "以下哪种动物是没有犬齿的？", "options": ["海牛", "牛", "五禽戏", "骆驼"], "correct": "B", "correct_idx": 1}, {"q": "莫高窟，鸣沙山，月牙泉是我国哪个省份的著名景点？", "options": ["报纸", "口腔科", "甘肃", "甘蔗"], "correct": "C", "correct_idx": 2}, {"q": "我们常在食盐中加入哪种元素来预防甲状腺肿？", "options": ["碳酸氢钠", "硫", "碘", "钙"], "correct": "C", "correct_idx": 2}, {"q": "被称为“补血圣药”的阿胶是用哪种动物的皮熬制的？", "options": ["画眉鸟", "下雪", "骆驼", "驴"], "correct": "D", "correct_idx": 3}, {"q": "棒球是由牛皮和哪种动物的皮包裹制作的？", "options": ["海牛", "五禽戏", "画眉鸟", "马"], "correct": "D", "correct_idx": 3}, {"q": "以下哪个器官不属于五脏?", "options": ["寇准", "苏轼", "肖邦", "脑"], "correct": "D", "correct_idx": 3}, {"q": "克隆是指生物体通过（）进行的（）繁殖？", "options": ["体细胞，无性", "正方体", "无雨", "毛细血管"], "correct": "A", "correct_idx": 0}, {"q": "以下哪种激素是人体中的垂体分泌的？", "options": ["生长激素", "天长地久", "褪黑素", "虾青素"], "correct": "A", "correct_idx": 0}, {"q": "\"世界上没有两片完全相同的叶子\"，这句话说明生物的什么特性？", "options": ["琵琶", "多样性", "贝多芬", "雄性激素"], "correct": "B", "correct_idx": 1}, {"q": "下列哪种生物中有细胞壁？", "options": ["花", "插花", "西兰花", "苏轼"], "correct": "A", "correct_idx": 0}, {"q": "为农作物施肥的主要目的是为植物提供什么？", "options": ["肖邦", "体细胞，无性", "无机盐", "机械能"], "correct": "C", "correct_idx": 2}, {"q": "以下哪种元素属于天然放射性元素？", "options": ["铁", "酒精", "碘", "镭"], "correct": "D", "correct_idx": 3}, {"q": "以下哪条描述不属于地中海气候的特点？", "options": ["比热容", "冬季", "哥伦比亚大学", "夏季比较湿润"], "correct": "D", "correct_idx": 3}, {"q": "美国唯一的群岛州是哪个州？", "options": ["苏轼", "夏威夷", "汪伦", "肖邦"], "correct": "B", "correct_idx": 1}, {"q": "彩色电视荧光屏上的彩色是哪3种光合成的？", "options": ["红色", "黑色", "红绿蓝", "黄"], "correct": "C", "correct_idx": 2}, {"q": "以下哪种动物是软体动物？", "options": ["画眉鸟", "五禽戏", "蜗牛", "狗"], "correct": "C", "correct_idx": 2}, {"q": "哪种鸟类是不筑巢、不育雏的？", "options": ["汪伦", "苏轼", "贺知章", "杜鹃"], "correct": "D", "correct_idx": 3}, {"q": "以下被誉为“植物中的熊猫”的是哪种珍稀物种？", "options": ["长颈鹿", "银杉", "五禽戏", "狗"], "correct": "B", "correct_idx": 1}, {"q": "被誉为“五岳第一天险”的长空栈道位于是哪个著名景区？", "options": ["山东半岛", "麦积山石窟", "琅琊山", "华山"], "correct": "D", "correct_idx": 3}, {"q": "淮扬名菜“铁板软兜”使用的是哪种水产作为主要食材？", "options": ["热干面", "醋", "鳝鱼", "柠檬"], "correct": "C", "correct_idx": 2}, {"q": "经济学中，常用哪种水果代称信息不对称的次品市场？", "options": ["油条", "面条", "醋", "柠檬"], "correct": "D", "correct_idx": 3}, {"q": "产于桂林荔浦的哪种农产品自乾隆朝起即被作为广西首选贡品？", "options": ["醋", "花青素", "核桃", "芋头"], "correct": "D", "correct_idx": 3}, {"q": "西湖醋鱼的别称是什么？", "options": ["宋嫂鱼", "寇准", "汪伦", "肖邦"], "correct": "A", "correct_idx": 0}, {"q": "“花甲重开，外加三七岁月”和“古稀双庆，内多一个春秋”都是指多少岁的老人？", "options": ["141岁", "1", "361", "4"], "correct": "A", "correct_idx": 0}, {"q": "《红楼梦》中贾宝玉出生之时，是如何带着通灵宝玉一起出世的？", "options": ["亚里士多德", "耳朵里", "口里衔着", "克里姆林宫"], "correct": "C", "correct_idx": 2}, {"q": "“皖南事变”中“皖南”即指事变发生地区在哪个省？", "options": ["肖邦", "口腔科", "安徽", "安史之乱"], "correct": "C", "correct_idx": 2}, {"q": "假设今年是狗年，请问前年是什么年？", "options": ["猴年", "海牛", "猪", "画眉"], "correct": "A", "correct_idx": 0}, {"q": "蒙古人种的头发一般都是什么颜色？", "options": ["黑色", "红色", "黄", "红绿蓝"], "correct": "A", "correct_idx": 0}, {"q": "法国里昂是哪个国际组织的总部所在？", "options": ["吴国", "英国", "法国大革命", "国际刑警组织"], "correct": "D", "correct_idx": 3}, {"q": "横琴口岸是通往哪座特别行政区的的口岸？", "options": ["澳门", "亚洲", "塔里木河", "西林寺"], "correct": "A", "correct_idx": 0}, {"q": "完成《西江月·夜行黄沙道中》填空：（  ）个星天外，（  ）点雨山前。", "options": ["11", "5", "360", "七八  两三"], "correct": "D", "correct_idx": 3}, {"q": "“但愿苍生俱饱暖，不辞辛苦出山林”歌颂的是哪种事物？", "options": ["煤炭", "琵琶", "樊哙", "汪伦"], "correct": "A", "correct_idx": 0}, {"q": "李白送孟浩然去扬州时是在哪里告别的？", "options": ["黄鹤楼", "肖邦", "黄色", "黄山"], "correct": "A", "correct_idx": 0}, {"q": "希罗多德曾经将哪个古代国家赞誉为“尼罗河的赠礼”？", "options": ["曾任楚国令尹", "樊哙", "报纸", "埃及"], "correct": "D", "correct_idx": 3}, {"q": "以下哪个不属于南宋中兴四将之一？", "options": ["宗泽", "高原", "肖邦", "黄盖"], "correct": "A", "correct_idx": 0}, {"q": "二战时期，哪个国家首个遭到过德国军队的闪击？", "options": ["芬兰", "亚特兰大", "荷兰", "波兰"], "correct": "D", "correct_idx": 3}, {"q": "以下人物中不是史学家的是哪一位？", "options": ["蔡元培", "元宵", "郦道元", "赤道"], "correct": "C", "correct_idx": 2}, {"q": "海子在《面朝大海春暖花开》中决定明天要做什么？", "options": ["亚马孙平原", "喂马", "马", "马"], "correct": "B", "correct_idx": 1}, {"q": "在陆游的《书愤其一》中提到了哪个著名关口？", "options": ["海南省", "大散关", "大洋洲", "富士山"], "correct": "B", "correct_idx": 1}, {"q": "在陆游的《书愤其一》中提到了哪个著名渡口？", "options": ["厄瓜多尔", "报纸", "大洋洲", "瓜洲渡"], "correct": "D", "correct_idx": 3}, {"q": "文学名词“倚天屠龙”是出自哪位作家的系列小说？", "options": ["苏轼", "金庸", "卫青", "金蝉子"], "correct": "B", "correct_idx": 1}, {"q": "一代武圣关云长被葬于两处，其安葬地都有哪个字？", "options": ["口腔科", "沈阳", "阳", "报纸"], "correct": "C", "correct_idx": 2}, {"q": "下列历史典故中，能说明天气对人类影响的是哪一个？", "options": ["草船借箭", "曾任楚国令尹", "苏轼", "艾草"], "correct": "A", "correct_idx": 0}, {"q": "“仕宦当作执金吾，娶妻当得阴丽华”是哪位汉代帝王年轻时的感慨？", "options": ["刘禅", "刘秀", "肖邦", "黄盖"], "correct": "B", "correct_idx": 1}, {"q": "《喜羊羊与灰太狼》中，羊村的现任村长是谁？", "options": ["鲤鱼", "下雪", "五禽戏", "慢羊羊"], "correct": "D", "correct_idx": 3}, {"q": "近代传统武术家黄飞鸿身兼武术教练和哪种工作？", "options": ["生长激素", "曾任楚国令尹", "汪伦", "医生"], "correct": "D", "correct_idx": 3}, {"q": "李小龙创立的实战搏击术叫什么？", "options": ["郦道元", "截拳道", "赤道", "道尔顿"], "correct": "B", "correct_idx": 1}, {"q": "第一个担任世卫组织总干事的中国人是谁？", "options": ["陈子昂", "郑成功", "陈冯富珍", "寇准"], "correct": "C", "correct_idx": 2}, {"q": "最重可超过59公斤，被称为“最重水果”的是哪种水果？", "options": ["面条", "菠萝蜜", "鳝鱼", "热干面"], "correct": "B", "correct_idx": 1}, {"q": "如果你要去红磡体育馆看表演，坐哪条铁路可以直达现场？", "options": ["广九线", "广东", "九月", "广西"], "correct": "A", "correct_idx": 0}, {"q": "第一个签署“一带一路”合作协议的发达国家是哪个国家？", "options": ["新西兰", "荷兰", "西晋", "山西省"], "correct": "A", "correct_idx": 0}, {"q": "妃子笑、糯米糍、桂味都是哪种水果的品种？", "options": ["花青素", "西兰花", "荔枝", "面条"], "correct": "C", "correct_idx": 2}, {"q": "食材“瑶柱”是哪类海鲜的干制品？", "options": ["柠檬", "油条", "面条", "扇贝"], "correct": "D", "correct_idx": 3}, {"q": "海关对入境人员进行检疫的目的是什么？", "options": ["樊哙", "控制传染源传播", "报纸", "刘铭传"], "correct": "B", "correct_idx": 1}, {"q": "以下哪种蔬菜属于茄科？", "options": ["花青素", "油条", "醋", "辣椒"], "correct": "D", "correct_idx": 3}, {"q": "歌曲《蝴蝶夫人》的故事发生在哪个国家？", "options": ["日本", "日月东升西落", "生日", "汪伦"], "correct": "A", "correct_idx": 0}, {"q": "我国设立的“农民丰收节”是在哪一个节气？", "options": ["分解者", "秋季", "秋分", "三分"], "correct": "C", "correct_idx": 2}, {"q": "我国的西气东输工程经过以下哪个省区境内？", "options": ["山西", "广西", "泰山移", "山东省"], "correct": "A", "correct_idx": 0}, {"q": "以下哪座城市是河西走廊中的“河西五市”之一？", "options": ["武则天", "顾炎武", "武侯祠", "武威"], "correct": "D", "correct_idx": 3}, {"q": "以下哪种棋类运动起源于中国？", "options": ["象棋", "唢呐", "琵琶", "围棋"], "correct": "D", "correct_idx": 3}, {"q": "以下植物中哪种不属于活化石？", "options": ["汪伦", "红豆", "梧桐", "铁"], "correct": "C", "correct_idx": 2}, {"q": "世界贸易组织的英文简写为什么？", "options": ["报纸", "琵琶", "WTO", "口腔科"], "correct": "C", "correct_idx": 2}, {"q": "最原始的瑞士军刀除了刀片外，还有哪个基本工具？", "options": ["螺丝起子", "吴起", "小王子", "金蝉子"], "correct": "A", "correct_idx": 0}, {"q": "中国传统中把河流的哪个方向称为阳？", "options": ["琵琶", "北", "西北", "北面"], "correct": "D", "correct_idx": 3}, {"q": "高铁复兴号的英文代码是什么？", "options": ["曾任楚国令尹", "报纸", "CR", "苏轼"], "correct": "C", "correct_idx": 2}, {"q": "满汉全席起源于哪个朝代？", "options": ["商朝", "清代", "清朝", "汉朝"], "correct": "B", "correct_idx": 1}, {"q": "成语“项庄舞剑，意在沛公”出自哪部史学名著？", "options": ["肖邦", "史记", "高原", "樊哙"], "correct": "B", "correct_idx": 1}, {"q": "冰球是哪一个国家的国球？", "options": ["大渡河", "加拿大", "大炮", "大气层"], "correct": "B", "correct_idx": 1}, {"q": "哪种常使用于次中音或低音演奏的西洋乐器被称为“音乐贵妇”？", "options": ["大提琴", "油画", "电子琴", "唢呐"], "correct": "A", "correct_idx": 0}, {"q": "《乌苏里船歌》是哪一个少数民族的经典民歌？", "options": ["琵琶", "报纸", "赫哲族", "蒙古族"], "correct": "C", "correct_idx": 2}, {"q": "全球美食“披萨“起源于哪个国家？", "options": ["大洋洲", "大暑", "意大利", "大炮"], "correct": "C", "correct_idx": 2}, {"q": "相传清朝康熙时人王致和发明了哪种传统美食？", "options": ["生日", "醋", "臭豆腐", "面条"], "correct": "C", "correct_idx": 2}, {"q": "以下我国哪个节日是为了纪念孙中山而定的？", "options": ["苏轼", "植树节", "曹植", "琵琶"], "correct": "B", "correct_idx": 1}, {"q": "以下哪个城市不是我国的直辖市？", "options": ["塔里木河", "根河", "西夏王陵", "深圳"], "correct": "D", "correct_idx": 3}, {"q": "互联网域名中后缀为UK的是指哪一个国家？", "options": ["英国", "海南省", "大洋洲", "富士山"], "correct": "A", "correct_idx": 0}, {"q": "美国的国球是什么？", "options": ["汪伦", "月球", "棒球", "苏轼"], "correct": "C", "correct_idx": 2}, {"q": "中国乒乓球队在哪一座城市举办的奥运会上实现了第一次“大满贯”？", "options": ["大洋洲", "大脑", "大洋洲", "亚特兰大"], "correct": "D", "correct_idx": 3}, {"q": "马头琴是哪个北方少数民族的传统乐器？", "options": ["蒙古族", "内蒙古", "赫哲族", "古埃及"], "correct": "A", "correct_idx": 0}, {"q": "596工程是我国研发哪种突破技术的工程代码？", "options": ["电子琴", "中子", "原子弹", "白鹿原"], "correct": "C", "correct_idx": 2}, {"q": "蟋蟀是用什么部位发出声音的？", "options": ["曾任楚国令尹", "汪伦", "翅膀", "报纸"], "correct": "C", "correct_idx": 2}, {"q": "邓颖超的出生地，因邕江穿城而过而得名“邕城”的是哪一座岭南重要城市？", "options": ["南宁", "海南五指山", "富士山", "南京"], "correct": "A", "correct_idx": 0}, {"q": "仍在建设中的世界第一高楼“国王塔“位于哪个国家？", "options": ["沙特", "肖邦", "亚特兰大", "报纸"], "correct": "A", "correct_idx": 0}, {"q": "以下哪一个不是奥运会竞技跳水项目？", "options": ["寇准", "三台云水", "跳阶跳水", "樊哙"], "correct": "C", "correct_idx": 2}, {"q": "哪一种著名的东方格斗技巧因攻击部位多样而有“八臂神拳”的美誉？", "options": ["泰拳", "曾任楚国令尹", "琵琶", "报纸"], "correct": "A", "correct_idx": 0}, {"q": "“普利策新闻奖”是由哪所高等学校的新闻学院颁发的？", "options": ["对比明暗", "哥伦比亚大学", "亚特兰大", "亚里士多德"], "correct": "B", "correct_idx": 1}, {"q": "英国都铎王朝的末代君主是哪位终生未婚的杰出帝王？", "options": ["白求恩", "肌红蛋白", "伊丽莎白一世", "莎士比亚"], "correct": "C", "correct_idx": 2}, {"q": "以下哪位皇帝登基时不是接替自己的父亲？", "options": ["宗泽", "汪伦", "宋太宗", "孟子"], "correct": "C", "correct_idx": 2}, {"q": "“生当作人杰，死亦为鬼雄”是李清照对哪个人物的感慨？", "options": ["汪伦", "苏轼", "高原", "项羽"], "correct": "D", "correct_idx": 3}, {"q": "以下哪本兵法被列入了北宋武经七书的行列？", "options": ["孙子兵法", "孟子", "孟子", "法布尔"], "correct": "A", "correct_idx": 0}, {"q": "小飞要研究唐代文学对过去的技法传承，他不可能参考下面哪篇文章？", "options": ["德国", "秦国", "协约国", "六国论"], "correct": "D", "correct_idx": 3}, {"q": "以下哪部作品获得过茅盾文学奖？", "options": ["白帝城", "李白", "白鹿原", "白色"], "correct": "C", "correct_idx": 2}, {"q": "在《木兰诗》中，花木兰的长鞭是在哪儿买到的？", "options": ["重庆市", "富士山", "北市", "亚洲"], "correct": "C", "correct_idx": 2}, {"q": "陕西省的大部分地区在战国时代都属于哪个诸侯国？", "options": ["秦岭", "苏秦", "卫青", "秦国"], "correct": "D", "correct_idx": 3}, {"q": "处世名言“大行不顾什么，大礼不辞小让”？", "options": ["体细胞，无性", "细谨", "苏轼", "毛细血管"], "correct": "B", "correct_idx": 1}, {"q": "“谪仙人”是哪位诗人对朋友的评语？", "options": ["郑成功", "贺知章", "汪伦", "苏轼"], "correct": "B", "correct_idx": 1}, {"q": "以下哪个汉字的构成形式是属于会意字？", "options": ["寇准", "休", "琵琶", "红豆"], "correct": "B", "correct_idx": 1}, {"q": "苏轼名句“一年好景君须记”的下一句中提到了哪种颜色？", "options": ["黄", "红色", "紫色", "红绿蓝"], "correct": "A", "correct_idx": 0}, {"q": "曾在百年前就设想了上海世博会场景的小说《新中国未来记》的作者是哪位大家？", "options": ["梁启超", "高原", "张骞", "寇准"], "correct": "A", "correct_idx": 0}, {"q": "俗语“先敬罗衣后敬人”和哪个成语的意思接近？", "options": ["以貌取人", "第一人称", "万径人踪灭", "虞美人"], "correct": "A", "correct_idx": 0}, {"q": "梁启超曾为哪位外国友人起了中文名“竺震旦”？", "options": ["泰戈尔", "卫青", "道尔顿", "黑格尔"], "correct": "A", "correct_idx": 0}, {"q": "由康有为等发起，中国的第一个维新派政治团体叫什么？", "options": ["汪伦", "殿阁大学士", "强学会", "钱三强"], "correct": "C", "correct_idx": 2}, {"q": "电池是将什么能源转变为电能以供使用？", "options": ["化学能", "杠杆原理", "音调", "比热容"], "correct": "A", "correct_idx": 0}, {"q": "“汉堡”、“慕尼黑”都是欧洲哪个国家的城市？", "options": ["英国", "富士山", "德国", "英国"], "correct": "C", "correct_idx": 2}, {"q": "名茶碧螺春的名字是哪位清代皇帝赐名的？", "options": ["汪伦", "高原", "樊哙", "康熙"], "correct": "D", "correct_idx": 3}, {"q": "摇滚乐队的标准配置通常有架子鼓、贝斯、吉他和什么？", "options": ["萨克斯", "电子琴", "书法", "唢呐"], "correct": "B", "correct_idx": 1}, {"q": "我国古乐五声音阶中“宫”音对应的是以下什么颜色？", "options": ["黄鹤楼", "黄色", "黄河", "黄土高原"], "correct": "B", "correct_idx": 1}, {"q": "我们常常把哪种调味品在加热后用于空气消毒？", "options": ["醋", "核桃", "花青素", "西兰花"], "correct": "A", "correct_idx": 0}, {"q": "粉领学士服代表的是哪个专业？", "options": ["郑成功", "文科", "卫青", "肖邦"], "correct": "B", "correct_idx": 1}, {"q": "我们常说的“毁三观”指的是毁掉了世界观、人生观和什么？", "options": ["价值观", "汪伦", "报纸", "寇准"], "correct": "A", "correct_idx": 0}, {"q": "象棋规则中哪个棋子在不吃子时移动规则与车相同？", "options": ["鳝鱼", "醋", "炮", "面条"], "correct": "C", "correct_idx": 2}, {"q": "人能听到声音是由于哪种器官的振动？", "options": ["耳膜", "胃", "消化系统", "舌头"], "correct": "A", "correct_idx": 0}, {"q": "以下哪种鱼不属于我国的四大家鱼之一？", "options": ["火光", "庄子", "骆驼", "鲤鱼"], "correct": "D", "correct_idx": 3}, {"q": "传说中的美人鱼的原型是哪种海洋生物？", "options": ["画眉鸟", "狗", "牛", "海牛"], "correct": "D", "correct_idx": 3}, {"q": "我国的三级学位中最高级别的是哪一个？", "options": ["琵琶", "莎士比亚", "亚里士多德", "博士"], "correct": "D", "correct_idx": 3}, {"q": "我们常用的铅笔中，用H表示的是哪类铅笔？", "options": ["体细胞，无性", "多样性", "硬性铅笔", "琵琶"], "correct": "C", "correct_idx": 2}, {"q": "又名“无名子”，被称为“美国花生”的是哪种干果？", "options": ["生日", "开心果", "热干面", "面条"], "correct": "B", "correct_idx": 1}, {"q": "歇后语“大眼对小眼”的上一句是什么？", "options": ["张飞", "张謇", "张大千", "张飞穿针"], "correct": "D", "correct_idx": 3}, {"q": "“竹板这么一打呀”是我国哪种传统曲艺的开场台词？", "options": ["书法", "快板", "象棋", "京剧"], "correct": "B", "correct_idx": 1}, {"q": "小时候唱到的儿歌“上灯台，偷油吃”的是哪种小动物？", "options": ["老鼠", "火光", "画眉", "画眉鸟"], "correct": "A", "correct_idx": 0}, {"q": "神话传说中七夕节，牛郎和织女会在哪种鸟类所搭的桥上相会？", "options": ["火光", "画眉", "五禽戏", "喜鹊"], "correct": "D", "correct_idx": 3}, {"q": "老抽和生抽都是哪种调味品的类别？", "options": ["热干面", "酱油", "油条", "芋头"], "correct": "B", "correct_idx": 1}, {"q": "“一柱香”在古时是计量什么的单位？", "options": ["寇准", "樊哙", "时间", "时针"], "correct": "C", "correct_idx": 2}, {"q": "“一会儿排成人字，一会儿排成一字”描述的是哪种动物的迁徙？", "options": ["大雁", "画眉鸟", "长颈鹿", "骆驼"], "correct": "A", "correct_idx": 0}, {"q": "根据成语，“螳螂捕蝉”的后面还跟了什么动物？", "options": ["黄雀", "黄盖", "黄色", "黄海"], "correct": "A", "correct_idx": 0}, {"q": "成语“黄粱美梦”中的“黄粱”指的是什么？", "options": ["铁", "粮食", "孟子", "樊哙"], "correct": "B", "correct_idx": 1}, {"q": "凉拌小菜“一青二白”，“青”是指小葱，那么“二白”是指葱白和哪种食材？", "options": ["甘蔗", "醋", "豆腐", "柠檬"], "correct": "C", "correct_idx": 2}, {"q": "在“祖宗十八代”中，如何称呼最早的一代？", "options": ["樊哙", "肖邦", "鼻祖", "彭祖"], "correct": "C", "correct_idx": 2}, {"q": "我们每年的“雷锋月”是几月份？", "options": ["3m/s", "38", "四月二十三日", "3月"], "correct": "D", "correct_idx": 3}, {"q": "哪位唐代文学家由于上表讽谏迎取佛骨而被贬潮州？", "options": ["孟子", "寇准", "高原", "韩愈"], "correct": "D", "correct_idx": 3}, {"q": "“饮冰室”是哪位清末思想家的书斋？", "options": ["高原", "梁武帝", "肖邦", "梁启超"], "correct": "D", "correct_idx": 3}, {"q": "“也值得一死！”是苏轼在吃完哪种鱼类之后发出的感叹？", "options": ["热干面", "甘蔗", "花青素", "河豚"], "correct": "D", "correct_idx": 3}, {"q": "典故愚公移山中的哪座山被誉为“天坛”？", "options": ["王后", "黄山", "王勃", "王屋山"], "correct": "D", "correct_idx": 3}, {"q": "古希腊哪位思想家喜欢在林荫道上讨论学问被称为“逍遥学派”？", "options": ["樊哙", "亚里士多德", "苏轼", "欧几里得"], "correct": "B", "correct_idx": 1}, {"q": "二战中成功开辟欧洲第二战场的“霸王行动”就是我们常说的哪次军事行动？", "options": ["安史之乱", "独立战争", "大泽乡起义", "诺曼底登陆"], "correct": "D", "correct_idx": 3}, {"q": "“一战”时期，英国、法国、俄罗斯帝国和美国组成的同盟我们称之为什么？", "options": ["亚洲", "协约国", "英国", "法国"], "correct": "B", "correct_idx": 1}, {"q": "培养了大量军事人才的黄埔军校最早兴办于我国哪个城市？", "options": ["塔里木河", "亚马孙平原", "广州", "大洋洲"], "correct": "C", "correct_idx": 2}, {"q": "陆游名诗“大材小用古所叹”中“大材小用”感叹的是哪位南宋词人？", "options": ["孟子", "黄盖", "辛弃疾", "寇准"], "correct": "C", "correct_idx": 2}, {"q": "万历年间的内阁首辅，写下了《论时政疏》的是哪位明朝大臣？", "options": ["肖邦", "张角", "张居正", "汪伦"], "correct": "C", "correct_idx": 2}, {"q": "文成公主和金城公主入藏，加强了汉族与哪个少数民族的友好往来？", "options": ["寇准", "吐蕃", "铁", "琵琶"], "correct": "B", "correct_idx": 1}, {"q": "1599年率先下令创制“满文”的是哪位清朝皇帝？", "options": ["赤壁之战", "阿尔泰山", "努尔哈赤", "维吾尔族"], "correct": "C", "correct_idx": 2}, {"q": "清朝时期的“盛京”指的是现在哪个城市？", "options": ["沈阳", "苏轼", "樊哙", "肖邦"], "correct": "A", "correct_idx": 0}, {"q": "中国文学史上最著名的吝啬鬼形象严监生出自哪部小说？", "options": ["林觉民", "西林寺", "青山郭外斜", "儒林外史"], "correct": "D", "correct_idx": 3}, {"q": "小说《海底两万里》中鹦鹉螺号的船长是谁？", "options": ["尼摩", "滚动摩擦", "口腔科", "汪伦"], "correct": "A", "correct_idx": 0}, {"q": "成语“一琴一鹤、户户悬鱼”表示的都是哪种寓意？", "options": ["骆驼", "为官清廉正直", "鲤鱼", "画眉鸟"], "correct": "B", "correct_idx": 1}, {"q": "“诗中有画画中有诗”是哪位大词人对王维的评价？", "options": ["苏东坡", "苏轼", "苏洵", "苏轼"], "correct": "A", "correct_idx": 0}, {"q": "课文《给我的孩子们》《黄山松》都是哪位画家的作品？", "options": ["孔子", "陈子昂", "丰子恺", "苏轼"], "correct": "C", "correct_idx": 2}, {"q": "苏轼《赤壁赋》中“其声呜呜然，如怨如慕，如泣如诉”描述的是哪种乐器的声音？", "options": ["琵琶", "排箫", "萨克斯", "箫"], "correct": "D", "correct_idx": 3}, {"q": "《丧钟为谁而鸣》讲述的是男主人公参加哪个国家反法西斯斗争的故事？", "options": ["西班牙", "山西省", "山西", "新西兰"], "correct": "A", "correct_idx": 0}, {"q": "“多乎哉，不多也”这句话使用了哪种修辞手法？", "options": ["设问", "铁", "琵琶", "苏轼"], "correct": "A", "correct_idx": 0}, {"q": "《诫子书》是哪位三国人物写给自己儿子的一封信？", "options": ["卫青", "汪伦", "黄盖", "诸葛亮"], "correct": "D", "correct_idx": 3}, {"q": "据《说文解字》记载，洗澡的“洗”最早是指洗什么部位？", "options": ["脚", "横膈膜", "脾", "消化系统"], "correct": "A", "correct_idx": 0}, {"q": "“但凡不能杀死你的,最终都会使你更强大”是哪位哲学家的名言？", "options": ["郑成功", "卫青", "孟子", "尼采"], "correct": "D", "correct_idx": 3}, {"q": "文艺复兴第一个人文主义者，被誉为“文艺复兴之父”的诗人是谁？", "options": ["卫青", "彼特拉克", "孟子", "黄盖"], "correct": "B", "correct_idx": 1}, {"q": "我们常说的“阳春白雪”和“下里巴人”最初指的是什么？", "options": ["苏轼", "乐曲", "音乐", "永乐大典"], "correct": "B", "correct_idx": 1}, {"q": "“操干戚以舞”说的是山海经中的哪位神话人物？", "options": ["刑天", "天然气", "武则天", "天津"], "correct": "A", "correct_idx": 0}, {"q": "成语“乌合之众”中“乌合”最初指的是什么？", "options": ["苏轼", "乌鸦", "乌骓马", "琵琶"], "correct": "B", "correct_idx": 1}, {"q": "“破天荒”最初是关于哪种事件的词语？", "options": ["汪伦", "菊科", "科举考试", "寇准"], "correct": "C", "correct_idx": 2}, {"q": "俞伯牙和钟子期互为“知音”的典故跟哪种艺术有关？", "options": ["报纸", "音乐", "琵琶", "乐曲"], "correct": "B", "correct_idx": 1}, {"q": "黄帝在阪泉之战中击败了哪位人物而成为天下共主？", "options": ["汉武帝", "口腔科", "奥斯曼帝国", "炎帝"], "correct": "D", "correct_idx": 3}, {"q": "《国语》中被劝诫说“防民之口，甚于防川”的是哪位帝王？", "options": ["王屋山", "周厉王", "汪伦", "肖邦"], "correct": "B", "correct_idx": 1}, {"q": "轮船招商局、江南制造局都是由哪位晚清重臣主持创办？", "options": ["李白", "李鸿章", "李自成", "肖邦"], "correct": "B", "correct_idx": 1}, {"q": "中国传统六经中的哪一部目前已经失传？", "options": ["乐经", "永乐大典", "口腔科", "肖邦"], "correct": "A", "correct_idx": 0}, {"q": "苏轼的《念奴娇.赤壁怀古》中的赤壁位于今天的哪个省？", "options": ["北冰洋", "北", "北冰洋", "湖北"], "correct": "D", "correct_idx": 3}, {"q": "曾经的英属印度后来分成了印度、巴基斯坦、孟加拉国和哪个国家？", "options": ["缅甸", "琵琶", "红豆", "苏轼"], "correct": "A", "correct_idx": 0}, {"q": "二战时德军用斯大林的哪种乐器来形容喀秋莎大炮的炮声？", "options": ["大提琴", "管风琴", "电子琴", "萨克斯"], "correct": "B", "correct_idx": 1}, {"q": "《与妻书》是哪位爱国青年给妻子的最后留言？", "options": ["高原", "林觉民", "林则徐", "樊哙"], "correct": "B", "correct_idx": 1}, {"q": "被西方艺坛称为“东方之笔”的，是哪位画家？", "options": ["张角", "张大千", "张飞", "张居正"], "correct": "B", "correct_idx": 1}, {"q": "历史上最早对“羊蝎子”吃法的记录，来自哪位文豪？", "options": ["黄盖", "肖邦", "苏轼", "苏州"], "correct": "C", "correct_idx": 2}, {"q": "以下哪位水浒好汉的绰号里没有带有颜色？", "options": ["高原", "林冲", "黄盖", "孟子"], "correct": "B", "correct_idx": 1}, {"q": "诗句“火树银花合，星桥铁锁开”描写的是哪个节日？", "options": ["元宵", "元宵节", "2元", "报纸"], "correct": "A", "correct_idx": 0}, {"q": "朱元璋设立了什么官职来帮助阅读起草文件，并作为侍从顾问？", "options": ["永乐大典", "殿阁大学士", "瑞士", "大西洋"], "correct": "B", "correct_idx": 1}, {"q": "孟母三迁的故事中，孟子的家搬到过什么地方？", "options": ["市场边", "北市", "苏轼", "报纸"], "correct": "A", "correct_idx": 0}, {"q": "以下哪个成语出自《道德经》？", "options": ["天长地久", "草地", "天鹅湖", "钦天监"], "correct": "A", "correct_idx": 0}, {"q": "史书《三国志》中除帝王外，单独列传的有诸葛亮和哪位人物？", "options": ["陆逊", "卫青", "汪伦", "寇准"], "correct": "A", "correct_idx": 0}, {"q": "《三国演义》中赵云在长坂坡遭遇过哪位魏国名将？", "options": ["张謇", "张大千", "张郃", "汪伦"], "correct": "C", "correct_idx": 2}, {"q": "世界上面积最大的飞地是美国的哪一个州？", "options": ["俄罗斯", "阿拉斯加", "欧若拉", "彼特拉克"], "correct": "B", "correct_idx": 1}, {"q": "厄尔尼诺是哪个大洋上的洋流引起的气候现象？", "options": ["印度洋", "塔里木河", "亚马孙平原", "太平洋"], "correct": "D", "correct_idx": 3}, {"q": "世界上最强烈的大洋暖流发源于哪个北美海湾？", "options": ["山西省", "墨西哥湾", "西楚霸王", "陕西省"], "correct": "B", "correct_idx": 1}, {"q": "境内有“世界第一高峰”，被称作“后藏中心”的是哪个西藏地级市？", "options": ["大渡河", "富士山", "日喀则", "亚洲"], "correct": "C", "correct_idx": 2}, {"q": "位于南极洲东部的毛德皇后地是由哪个北欧国家探险家命名的？", "options": ["肖邦", "樊哙", "挪威", "武威"], "correct": "C", "correct_idx": 2}, {"q": "传统上将西藏拉萨地区和山南地区合称为什么？", "options": ["肖邦", "铁", "口腔科", "前藏"], "correct": "D", "correct_idx": 3}, {"q": "四大洋中面积最小的是哪一个？", "options": ["大洋洲", "北冰洋", "大西洋", "北京"], "correct": "B", "correct_idx": 1}, {"q": "以下哪种营养素不可能转化为脂肪？", "options": ["维生素", "虾青素", "维吾尔族", "肾上腺素"], "correct": "A", "correct_idx": 0}, {"q": "以下对于草履虫的描述不正确的是？", "options": ["长颈鹿", "火光", "骆驼", "寿命仅三天"], "correct": "D", "correct_idx": 3}, {"q": "光学中的三原色指的是绿色、红色和什么颜色？", "options": ["紫色", "黑色", "红色", "蓝色"], "correct": "D", "correct_idx": 3}, {"q": "居里夫人一生发现的两种放射性元素分别是钋和什么？", "options": ["镭", "酒精", "三氧化二砷", "硫"], "correct": "A", "correct_idx": 0}, {"q": "实验室中通常用碳酸钙和哪种物质反应制备二氧化碳？", "options": ["臭氧", "稀盐酸", "钙", "酒精"], "correct": "B", "correct_idx": 1}, {"q": "玻璃的主要成分是哪一种化合物？", "options": ["碳酸钙", "铁", "三氧化二砷", "二氧化硅"], "correct": "D", "correct_idx": 3}, {"q": "伽利略利用首台天文望远镜观测的第一个星体是哪个星体？", "options": ["四月二十三日", "肖邦", "月球", "棒球"], "correct": "C", "correct_idx": 2}, {"q": "文具“薛涛笺”是产生于哪个朝代？", "options": ["郑成功", "贺知章", "唐朝", "樊哙"], "correct": "C", "correct_idx": 2}, {"q": "在国际官方斯诺克比赛中，对手没有犯规的情况下，一名选手单局最高得分为多少分？", "options": ["3", "4", "147", "1"], "correct": "C", "correct_idx": 2}, {"q": "化学中把什么物质视作最简单的有机化合物？", "options": ["甲烷", "锌", "氧气", "三氧化二砷"], "correct": "A", "correct_idx": 0}, {"q": "人体消化系统的两大组成部分是指消化道和什么？", "options": ["琵琶", "仰韶文化", "消化腺", "廖化"], "correct": "C", "correct_idx": 2}, {"q": "童话故事《丑小鸭》中的丑小鸭长大后变成了哪种动物？", "options": ["白起", "白求恩", "白天鹅", "白帝城"], "correct": "C", "correct_idx": 2}, {"q": "俗话说三个臭皮匠，顶的上哪位历史人物？", "options": ["诸葛亮", "孟子", "寇准", "贺知章"], "correct": "A", "correct_idx": 0}, {"q": "《小红帽》的故事中，小红帽的外婆被谁吞进了肚子里？", "options": ["大洋洲", "大灰狼", "天狼", "大暑"], "correct": "B", "correct_idx": 1}, {"q": "我们在哪部著作中可以查询到电影《哪吒之魔童闹海》的故事背景？", "options": ["神马", "曾任楚国令尹", "封神演义", "肖邦"], "correct": "C", "correct_idx": 2}, {"q": "李时珍编著《本草纲目》是属于什么类型的典籍？", "options": ["报纸", "关中", "中医", "中途岛"], "correct": "C", "correct_idx": 2}, {"q": "成语“作茧自缚”最初形容的是哪种昆虫？", "options": ["下雪", "画眉鸟", "猪", "蚕"], "correct": "D", "correct_idx": 3}, {"q": "“如果冬天来了，春天还会远吗？ ”出自雪莱的哪首诗？", "options": ["山西", "陕西省", "西风颂", "山西省"], "correct": "C", "correct_idx": 2}, {"q": "古代“八百里加急”是用什么动物来作为交通工具传递信息？", "options": ["鲤鱼", "长颈鹿", "画眉鸟", "马"], "correct": "D", "correct_idx": 3}, {"q": "俗语“一寸光阴一寸金”告诫我们要怎么样？", "options": ["汪伦", "寇准", "时间", "珍惜时间"], "correct": "D", "correct_idx": 3}, {"q": "“法老”是对哪个古代国家国王的尊称？", "options": ["古埃及", "蒙古族", "内蒙古自治区", "报纸"], "correct": "A", "correct_idx": 0}, {"q": "诗经“蒹葭苍苍”中的“葭”指的是什么植物？", "options": ["报纸", "肖邦", "红豆", "芦苇"], "correct": "D", "correct_idx": 3}, {"q": "农历的五月初五是中国的哪个传统节日？", "options": ["元宵节", "肩关节", "寇准", "端午节"], "correct": "D", "correct_idx": 3}, {"q": "在小说《三国演义》中，关羽刮骨疗伤时正在做什么？", "options": ["下棋", "下雪", "口腔科", "报纸"], "correct": "A", "correct_idx": 0}, {"q": "在我国的传统文化中，哪种水果有象征长寿的寓意？", "options": ["孔子", "桃子", "孟子", "金蝉子"], "correct": "B", "correct_idx": 1}, {"q": "维纳斯是罗马神话哪个神的象征？", "options": ["报纸", "虞美人", "曾任楚国令尹", "美神"], "correct": "D", "correct_idx": 3}, {"q": "在鸿门宴上执剑起舞，意图刺杀刘邦的是谁？", "options": ["汪伦", "党项", "曾任楚国令尹", "项庄"], "correct": "D", "correct_idx": 3}, {"q": "名著《三国演义》中“千里走单骑”说的是蜀国哪位大将的典故？", "options": ["高原", "郑成功", "苏轼", "关羽"], "correct": "D", "correct_idx": 3}, {"q": "形容老人精神矍铄的成语“鹤发童颜”中，鹤发指的是哪种颜色的头发？", "options": ["白帝城", "肖邦", "白色", "李白"], "correct": "C", "correct_idx": 2}, {"q": "在“苏武牧羊”的历史典故中，苏武是哪个朝代出使西域的使节？", "options": ["清朝", "汉朝", "清代", "隋"], "correct": "B", "correct_idx": 1}, {"q": "在《西游记》中，“清风、明月”都是哪位人物的童子？", "options": ["大西洋", "仙人掌", "镇江", "镇元大仙"], "correct": "D", "correct_idx": 3}, {"q": "“赵钱孙李、周吴郑王”是哪本儿童启蒙读物的开篇第一句？", "options": ["石家庄", "百家姓", "儒家", "曾任楚国令尹"], "correct": "B", "correct_idx": 1}, {"q": "太阳直射南回归线时，南京属于什么季节？", "options": ["琵琶", "春季", "冬季", "秋季"], "correct": "C", "correct_idx": 2}, {"q": "雨后的彩虹最内侧是什么颜色？", "options": ["黄", "黑色", "紫色", "蓝色"], "correct": "C", "correct_idx": 2}, {"q": "鄂尔多斯的四宝“羊煤土气”中，“气”指的是哪种自然资源？", "options": ["天津", "钦天监", "氧气", "天然气"], "correct": "D", "correct_idx": 3}, {"q": "在以下哪个国家境内旅游时有可能看到“日不落”的极昼现象？", "options": ["贝多芬", "报纸", "亚特兰大", "芬兰"], "correct": "D", "correct_idx": 3}, {"q": "人民科学家南仁东是“中国天眼”的奠基人，请问“中国天眼”属于哪种类型的望远镜？", "options": ["射电望远镜", "电容量", "电子琴", "折射"], "correct": "A", "correct_idx": 0}, {"q": "白露、霜降都是哪个季节的节气？", "options": ["冬季", "春季", "冬季", "秋季"], "correct": "D", "correct_idx": 3}, {"q": "我国的四大盆地中，纬度最高的是哪一个盆地？", "options": ["准噶尔盆地", "摩尔曼斯克", "人杰地灵", "道尔顿"], "correct": "A", "correct_idx": 0}, {"q": "奶糖外层常包裹的白色薄膜的成分是什么物质？", "options": ["淀粉", "报纸", "孟子", "铁"], "correct": "A", "correct_idx": 0}, {"q": "儿童游戏“跷跷板”在物理上体现了什么原理？", "options": ["惯性定律", "化学能", "杠杆原理", "大气压强"], "correct": "C", "correct_idx": 2}, {"q": "花露水应当远离火源使用是因为其中含有什么成分?", "options": ["酒精", "氟", "铁", "氧气"], "correct": "A", "correct_idx": 0}, {"q": "生活中常见的苏打水其主要成分是哪种化学物质的水溶液？", "options": ["铁", "碳酸氢钠", "氟", "锌"], "correct": "B", "correct_idx": 1}, {"q": "独木舟能浮在水面上是因为直接受到了什么力的作用？", "options": ["口腔科", "报纸", "表面张力", "水的浮力"], "correct": "D", "correct_idx": 3}, {"q": "“小确幸”一词出自哪个作家的随笔？", "options": ["农村三部曲", "上下结构", "继续上升", "村上春树"], "correct": "D", "correct_idx": 3}, {"q": "在唐代长安城经常可以见到的“新罗人”是现今哪个国家的人？", "options": ["秦国", "韩国", "孟子", "郑成功"], "correct": "B", "correct_idx": 1}, {"q": "音乐史上的“3B”包括了以下哪位作曲家？", "options": ["亚里士多德", "贝多芬", "卫青", "苏轼"], "correct": "B", "correct_idx": 1}, {"q": "传统吉祥图案“三多九如”中的“多子”常用哪种水果暗喻？", "options": ["汪伦", "寇准", "石榴", "樊哙"], "correct": "C", "correct_idx": 2}, {"q": "科幻文学领域国际最高奖项，被誉为“科幻文学界的诺贝尔奖”的是什么奖？", "options": ["樊哙", "雨果奖", "苏轼", "雨伞"], "correct": "B", "correct_idx": 1}, {"q": "京沪高铁连接的城市中靠海的除了上海，还有哪一个城市？", "options": ["大渡河", "天津", "亚马孙平原", "根河"], "correct": "B", "correct_idx": 1}, {"q": "以下哪类恐龙不属于食肉恐龙？", "options": ["三角龙", "海牛", "骆驼", "火光"], "correct": "A", "correct_idx": 0}, {"q": "小飞想乘飞机旅行在国内出发，他能携带什么上飞机？", "options": ["肖邦", "相反数", "相机", "无机盐"], "correct": "C", "correct_idx": 2}, {"q": "传说中的怪兽“年”害怕什么？", "options": ["画眉鸟", "狗", "三角龙", "火光"], "correct": "D", "correct_idx": 3}, {"q": "以下哪种小吃不是南京名小吃？", "options": ["芋头", "热干面", "醋", "甘蔗"], "correct": "B", "correct_idx": 1}, {"q": "佛山无影脚传说是哪位近代武术家的绝技？", "options": ["李鸿章", "黄盖", "黄河", "黄飞鸿"], "correct": "D", "correct_idx": 3}, {"q": "我国第一个获得亚运会举办资格的城市是哪一个？", "options": ["北京", "北冰洋", "富士山", "大洋洲"], "correct": "A", "correct_idx": 0}, {"q": "继北京之后，第二个举办亚运会的我国城市是哪个？", "options": ["广东省", "广州", "大洋洲", "海南省"], "correct": "B", "correct_idx": 1}, {"q": "《天龙八部》中姑苏慕容氏是哪个少数民族的皇族血统？", "options": ["鲜卑", "汪伦", "寇准", "苏轼"], "correct": "A", "correct_idx": 0}, {"q": "名著《三国演义》中，三顾茅庐的时候是谁在诸葛亮的后院放了一把火？", "options": ["张骞", "张飞", "张大千", "黄飞鸿"], "correct": "B", "correct_idx": 1}, {"q": "“子非鱼，安知鱼之乐？”的辩论出自惠子和哪位战国时期先哲之口？", "options": ["长颈鹿", "火光", "庄子", "画眉"], "correct": "C", "correct_idx": 2}, {"q": "始终坚信“地球是圆的”，率领的船队完成了首次环球航行的是哪位航海家？", "options": ["肖邦", "樊哙", "张骞", "麦哲伦"], "correct": "D", "correct_idx": 3}, {"q": "“龟兔赛跑”的故事出自哪个故事集？", "options": ["伊索寓言", "苏轼", "汪伦", "琵琶"], "correct": "A", "correct_idx": 0}, {"q": "“知己知彼，百战不殆”是哪位春秋战国时期的军事家所说？", "options": ["孙武", "苏轼", "武侯祠", "肖邦"], "correct": "A", "correct_idx": 0}, {"q": "名句“天时不如地利，地利不如人和”出自哪位先秦儒家思想家？", "options": ["汪伦", "孟子", "姜子牙", "孔子"], "correct": "B", "correct_idx": 1}, {"q": "我国最大的食糖产地是哪个省级行政区？", "options": ["广东", "大西洋", "山西省", "广西"], "correct": "D", "correct_idx": 3}, {"q": "“三省六部制”最早确立于我国历史上哪个朝代？", "options": ["隋", "汉朝", "清代", "商朝"], "correct": "A", "correct_idx": 0}, {"q": "“巴氏消毒法”从原理上又被称为什么杀菌法？", "options": ["肖邦", "法国", "低温杀菌法", "口腔科"], "correct": "C", "correct_idx": 2}, {"q": "我们常用“丹青”来指代哪种艺术？", "options": ["雕版印刷术", "象棋", "绘画", "唢呐"], "correct": "C", "correct_idx": 2}, {"q": "蜂窝中每个房孔的横截面都是什么几何图形？", "options": ["六边形", "六国论", "报纸", "五十六个星座"], "correct": "A", "correct_idx": 0}, {"q": "告诉青少年要发奋图强的汉乐府诗词“少壮不努力”其后半句是什么？", "options": ["大唐西域记", "老大徒伤悲", "张大千", "永乐大典"], "correct": "B", "correct_idx": 1}, {"q": "古文《两小儿辩日》的故事与哪位先贤有关？", "options": ["寇准", "孙子兵法", "孔子", "金蝉子"], "correct": "C", "correct_idx": 2}, {"q": "吴承恩小说《西游记》中的“火焰山”是指我国今天的哪个盆地？", "options": ["台湾地区", "吐蕃", "吐鲁番盆地", "地壳"], "correct": "C", "correct_idx": 2}, {"q": "“若鸦片一旦未绝，本大臣一日不回”是哪位清朝民族英雄立下的豪言壮语？", "options": ["林觉民", "孟子", "寇准", "林则徐"], "correct": "D", "correct_idx": 3}, {"q": "相对来说，同种灯泡功率越大，哪项数据越低？", "options": ["大气压强", "惯性定律", "折射", "电阻"], "correct": "D", "correct_idx": 3}, {"q": "每年的世界读书日是哪一天？", "options": ["三个火枪手", "三体", "农村三部曲", "四月二十三日"], "correct": "D", "correct_idx": 3}, {"q": "被调侃为“这个夏天最要感谢的男人”的威利斯·开利是哪种家用电器的发明人?", "options": ["肖邦", "空调", "汪伦", "苏轼"], "correct": "B", "correct_idx": 1}, {"q": "以下哪种美食起源不在亚洲？", "options": ["曾任楚国令尹", "报纸", "甜甜圈", "汪伦"], "correct": "C", "correct_idx": 2}, {"q": "联合国会徽是从地球上哪里的高空俯瞰的世界地图？", "options": ["北冰洋", "北极", "北市", "北冰洋"], "correct": "B", "correct_idx": 1}, {"q": "以下哪个属于经济学中的第三产业？", "options": ["孟子", "电子琴", "桃子", "租房子"], "correct": "D", "correct_idx": 3}, {"q": "武汉三镇不包括以下哪个市镇？", "options": ["汉中", "中医", "汉武帝", "中途岛"], "correct": "A", "correct_idx": 0}, {"q": "被称为中国原子能科学之父的是哪位科学家？", "options": ["钱三强", "孟子", "肖邦", "汪伦"], "correct": "A", "correct_idx": 0}, {"q": "灭绝于一万年前的哪种动物是陆地上生存过的最大哺乳动物？", "options": ["巨犀", "鲤鱼", "下雪", "三角龙"], "correct": "A", "correct_idx": 0}, {"q": "传说中孕育于巨蛋之中的神话人物是谁？", "options": ["琵琶", "蒙古族", "盘古", "报纸"], "correct": "C", "correct_idx": 2}, {"q": "传说中女娲造物，初一造鸡，初二造狗，初几造了人？", "options": ["七", "48", "38", "4"], "correct": "A", "correct_idx": 0}, {"q": "袋鼠的尾巴最重要的作用是什么？", "options": ["琵琶", "玉衡", "角平分线", "维持平衡"], "correct": "D", "correct_idx": 3}, {"q": "用大豆不能制作出哪种食物？", "options": ["油条", "酱油", "生日", "花青素"], "correct": "A", "correct_idx": 0}, {"q": "国际奥委会总部位于瑞士的哪一个湖边小镇？", "options": ["樊哙", "苏轼", "铁", "洛桑"], "correct": "D", "correct_idx": 3}, {"q": "以下人体器官哪个是属于免疫器官？", "options": ["脾", "横膈膜", "胃", "消化系统"], "correct": "A", "correct_idx": 0}, {"q": "大禹渡、风陵渡都在哪条大河之上？", "options": ["肖邦", "黄河", "黄山", "黄海"], "correct": "B", "correct_idx": 1}, {"q": "二十四节气中，春分和秋分时太阳都会直射哪条纬线？", "options": ["赤道", "琵琶", "赤发鬼", "赤壁之战"], "correct": "A", "correct_idx": 0}, {"q": "老北京常说“人生三面”中的面指的是什么？", "options": ["面条", "油条", "西兰花", "核桃"], "correct": "A", "correct_idx": 0}, {"q": "老北京常说“人生三面”中除了满月、去世的仪式上外还有哪个时辰吃打卤面？", "options": ["醋", "柠檬", "生日", "油条"], "correct": "C", "correct_idx": 2}, {"q": "传统小吃青团的绿色是用哪种植物浸染的？", "options": ["寇准", "艾草", "苏轼", "曾任楚国令尹"], "correct": "B", "correct_idx": 1}, {"q": "小飞在广州登船沿珠江旅行，他可以直接坐船到达哪个以下哪个城市？", "options": ["富士山", "南宁", "南京", "中国"], "correct": "B", "correct_idx": 1}, {"q": "人体缺乏以下哪种维生素会导致佝偻病？", "options": ["维生素D", "肾上腺素", "王维", "虾青素"], "correct": "A", "correct_idx": 0}, {"q": "互联网域名中后缀为.UK的是指哪一个国家？", "options": ["富士山", "协约国", "塔里木河", "英国"], "correct": "D", "correct_idx": 3}, {"q": "1英镑的纸币上印着哪位著名科学家的头像？", "options": ["牛顿", "寇准", "肖邦", "黄盖"], "correct": "A", "correct_idx": 0}, {"q": "哪位科学家被称为“把人类踢出宇宙中心的人”？", "options": ["白求恩", "哥白尼", "李白", "莱布尼茨"], "correct": "B", "correct_idx": 1}, {"q": "奥运会的圣火传递仪式，最初是为了呼吁什么？", "options": ["独立战争", "琵琶", "赤壁之战", "停战"], "correct": "D", "correct_idx": 3}, {"q": "以下哪个是天线宝宝的名字？", "options": ["孟子", "郑成功", "樊哙", "丁丁"], "correct": "D", "correct_idx": 3}, {"q": "希腊史诗荷马史诗的下半部讲述的是怎样的冒险故事？", "options": ["航海", "西夏王陵", "塔里木河", "亚洲"], "correct": "A", "correct_idx": 0}, {"q": "在封神演义中周文王梦见了哪种动物象征着姜子牙？", "options": ["狗", "熊", "三角龙", "火光"], "correct": "B", "correct_idx": 1}, {"q": "封神演义中武成王黄飞虎的坐骑是什么动物？", "options": ["蜗牛", "长颈鹿", "三角龙", "牛"], "correct": "D", "correct_idx": 3}, {"q": "京剧系列“《失·空·斩》”中犯下大错的是哪位人物？", "options": ["苏轼", "马谡", "高原", "樊哙"], "correct": "B", "correct_idx": 1}, {"q": "徐霞客和哪位名医同属一个朝代？", "options": ["李靖", "汪伦", "李时珍", "李白"], "correct": "C", "correct_idx": 2}, {"q": "英文字母一共有多少个？", "options": ["26", "1", "360", "11"], "correct": "A", "correct_idx": 0}, {"q": "我国历史上在位时间最长的皇帝出现在哪个朝代？", "options": ["汉朝", "清朝", "商朝", "清代"], "correct": "B", "correct_idx": 1}, {"q": "世界上最大的古代土石建筑工程是什么？", "options": ["大洋洲", "长城", "华山", "海南省"], "correct": "B", "correct_idx": 1}, {"q": "以下事件中，与关羽无关的是哪一个？", "options": ["琵琶", "寇准", "七擒七纵", "樊哙"], "correct": "C", "correct_idx": 2}, {"q": "以下哪个成语说的是春天的风景？", "options": ["花椒", "陶渊明", "不明飞行物", "柳暗花明"], "correct": "D", "correct_idx": 3}, {"q": "我国现存较为完好的2座明清知府衙门一座位于南阳，另一座位于哪座城市？", "options": ["淮安", "曾任楚国令尹", "汪伦", "报纸"], "correct": "A", "correct_idx": 0}, {"q": "历时14多年，唐朝最大的一次叛乱是哪一次叛乱？", "options": ["独立战争", "安史之乱", "巴黎公社", "虎门销烟"], "correct": "B", "correct_idx": 1}, {"q": "以下哪个称呼说的不是南京？", "options": ["口水", "京口", "报纸", "东京"], "correct": "B", "correct_idx": 1}, {"q": "秦朝时期，担任哪个官职可以称为“位列三公”？", "options": ["宋太宗", "太尉", "太平洋", "肖邦"], "correct": "B", "correct_idx": 1}, {"q": "下面哪个词语没有飞字的同音字？", "options": ["口腔科", "妄自菲薄", "见不贤而内自省也", "琵琶"], "correct": "B", "correct_idx": 1}, {"q": "第一次世界大战后，战胜国在哪座城市召开了停战会议？", "options": ["亚洲", "巴黎", "华山", "大洋洲"], "correct": "B", "correct_idx": 1}, {"q": "我国春秋战国时期使用过哪种货币？", "options": ["曾任楚国令尹", "报纸", "蚁鼻钱", "樊哙"], "correct": "C", "correct_idx": 2}, {"q": "刘邦入关后与关中百姓“约法三章”，规定“伤人及盗抵罪”和什么？", "options": ["万径人踪灭", "杀人者死", "虞美人", "分解者"], "correct": "B", "correct_idx": 1}, {"q": "史记记载人物中，以下哪位没有被收入列传？", "options": ["勾践", "寇准", "曾任楚国令尹", "口腔科"], "correct": "A", "correct_idx": 0}, {"q": "西湖十景“苏堤春晓”源于哪位著名的文人？", "options": ["肖邦", "汪伦", "苏轼", "苏东坡"], "correct": "C", "correct_idx": 2}, {"q": "英语Sep是哪个月份的简写？", "options": ["月球", "报纸", "口腔科", "九月"], "correct": "D", "correct_idx": 3}, {"q": "如果小明的五绝诗被杂志社采用，按照正文部分每字5元计算，他能得到多少稿费？", "options": ["360", "元宵节", "100元", "13岁"], "correct": "C", "correct_idx": 2}, {"q": "军训时听到的口令“向右转”，那么是指是向右转多少度？", "options": ["360", "4", "3m/s", "90"], "correct": "D", "correct_idx": 3}, {"q": "吃火锅时常说的“毛肚”一般出自下列哪种动物？", "options": ["牛", "五禽戏", "三角龙", "画眉"], "correct": "A", "correct_idx": 0}, {"q": "中国四大文庙在建造之初都是为了纪念哪位先贤？", "options": ["汪伦", "苏轼", "丰子恺", "孔子"], "correct": "D", "correct_idx": 3}, {"q": "在我国古代，丝绸材料的主要来源是下列哪种昆虫吐的丝？", "options": ["蚕", "长颈鹿", "画眉", "下雪"], "correct": "A", "correct_idx": 0}, {"q": "发明了硝化甘油炸药的诺贝尔是哪个国家的化学家？", "options": ["瑞典", "报纸", "苏轼", "瑞士"], "correct": "A", "correct_idx": 0}, {"q": "截止目前，我国设立时间最短的直辖市是哪个城市？", "options": ["中国", "重庆市", "富士山", "塔里木河"], "correct": "B", "correct_idx": 1}, {"q": "人们晕车主要是因为体内哪里的平衡感受器受到了刺激？", "options": ["口里衔着", "耳朵里", "重耳", "亚里士多德"], "correct": "B", "correct_idx": 1}, {"q": "火烈鸟食用鱼虾、藻类摄入了哪种物质以使通体呈红色？", "options": ["虾青素", "狗", "画眉鸟", "鲤鱼"], "correct": "A", "correct_idx": 0}, {"q": "“戒指”一词最早出自哪位元代戏剧家的作品？", "options": ["汉中", "关汉卿", "汉武帝", "大散关"], "correct": "B", "correct_idx": 1}, {"q": "百事可乐最早是用于治疗哪个器官疾病的药物？", "options": ["胃部", "农村三部曲", "寇准", "报纸"], "correct": "A", "correct_idx": 0}, {"q": "王羲之从哪种动物的体态姿势上领悟到书法执笔运笔的道理？", "options": ["长颈鹿", "骆驼", "鹅", "下雪"], "correct": "C", "correct_idx": 2}, {"q": "成语“一举两得”中的“两得”原意是指得到哪种动物？", "options": ["老虎", "骆驼", "画眉", "五禽戏"], "correct": "A", "correct_idx": 0}, {"q": "被法国人爱称为“铁娘子”的是哪个建筑物？", "options": ["华尔兹", "埃菲尔铁塔", "摩尔曼斯克", "努尔哈赤"], "correct": "B", "correct_idx": 1}, {"q": "在植物学上，我们平时吃的大蒜与下列哪种植物属于同一科？", "options": ["百合", "热干面", "油条", "生日"], "correct": "A", "correct_idx": 0}, {"q": "天文学中将哪个星体的轨迹路线称为黄道？", "options": ["沈阳", "太阳", "太平洋", "汪伦"], "correct": "B", "correct_idx": 1}, {"q": "小明要从云南陆上通道出国旅行，他可以直接到达哪个国家？", "options": ["报纸", "南昌", "孔雀东南飞", "越南"], "correct": "D", "correct_idx": 3}, {"q": "珠穆朗玛峰位于我国和尼泊尔交界的哪座山脉之上？", "options": ["喂马", "喜马拉雅", "彼特拉克", "欧若拉"], "correct": "B", "correct_idx": 1}, {"q": "世界上国土面积仅次于俄罗斯的是哪个国家？", "options": ["大渡河", "张大千", "加拿大", "大炮"], "correct": "C", "correct_idx": 2}, {"q": "地震一般发生在地球的哪个结构中？", "options": ["地球公转", "台湾地区", "地壳", "琵琶"], "correct": "C", "correct_idx": 2}, {"q": "月食是月球运行至哪颗星球的阴影中而出现的天文现象？", "options": ["地球", "月球", "草地", "天长地久"], "correct": "A", "correct_idx": 0}, {"q": "我国广西的边境城市东兴与哪个国家隔河相望？", "options": ["海南五指山", "海南省", "越南", "报纸"], "correct": "C", "correct_idx": 2}, {"q": "能说明地球自转的地理现象是哪一个？", "options": ["日月东升西落", "西晋", "大西洋", "西北"], "correct": "A", "correct_idx": 0}, {"q": "下列描述天气的是哪一句？", "options": ["贝多芬", "三个火枪手", "三亚晴转多云", "印度尼西亚"], "correct": "C", "correct_idx": 2}, {"q": "世界上与海岸线直线距离最远的是哪个城市？", "options": ["中国", "大洋洲", "乌鲁木齐", "西夏王陵"], "correct": "C", "correct_idx": 2}, {"q": "以下哪个岛屿在太平洋上？", "options": ["中途岛", "大渡河", "塔里木河", "中国"], "correct": "A", "correct_idx": 0}, {"q": "被西方称之为力学之父的是哪位科学家？", "options": ["阿基米德", "孟子", "樊哙", "歌德"], "correct": "A", "correct_idx": 0}, {"q": "被人们誉为“生命之花”的是下列哪种微量元素？", "options": ["酒精", "氧气", "锌", "碳酸钙"], "correct": "C", "correct_idx": 2}, {"q": "预防蛀牙应选择含什么物质的牙膏？", "options": ["酒精", "氟", "铁", "三氧化二砷"], "correct": "B", "correct_idx": 1}];
+
+let questions = [];
+let currentIndex = 0;
+let score = 0;
+let wrongList = [];
+let answered = false;
+let selectedOption = -1;
+let totalQuestions = 0;
+let autoAdvanceTimer = null;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startQuiz(count) {
+  totalQuestions = Math.min(count, ALL_QUESTIONS.length);
+  questions = shuffle(ALL_QUESTIONS).slice(0, totalQuestions);
+  currentIndex = 0;
+  score = 0;
+  wrongList = [];
+  answered = false;
+  selectedOption = -1;
+  if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+  renderQuestion();
+}
+
+function renderQuestion() {
+  if (currentIndex >= questions.length) {
+    renderResult();
+    return;
+  }
+
+  const q = questions[currentIndex];
+  const progress = ((currentIndex) / questions.length * 100).toFixed(1);
+  const letters = ['A', 'B', 'C', 'D'];
+
+  let optionsHtml = q.options.map((opt, i) => {
+    return '<button class="option-btn" data-idx="' + i + '" onclick="selectOption(' + i + ')">' +
+      '<span class="opt-letter">' + letters[i] + '</span>' +
+      '<span>' + escapeHtml(opt) + '</span>' +
+    '</button>';
+  }).join('');
+
+  document.getElementById('app').innerHTML = `
+    <div class="header">
+      <span>第 ${currentIndex + 1}/${questions.length} 题</span>
+      <div class="progress-wrap">
+        <div class="progress-bar" style="width:${progress}%"></div>
+      </div>
+      <span>得分: ${score}</span>
+    </div>
+    <div class="card" id="qcard">
+      <div class="question-num">题目 #${currentIndex + 1}</div>
+      <div class="question-text">${escapeHtml(q.q)}</div>
+      <div class="options-list" id="optionsList">
+        ${optionsHtml}
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <button class="btn btn-next" id="nextBtn" disabled onclick="nextQuestion()">下一题 →</button>
+    </div>
+    <div class="hint">点击选项或按 A / B / C / D 键选择</div>
+  `;
+
+  answered = false;
+  selectedOption = -1;
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', handleKeydown);
+}
+
+function handleKeydown(e) {
+  if (answered) return;
+  const key = e.key.toUpperCase();
+  const keyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+  if (key in keyMap) {
+    selectOption(keyMap[key]);
+  }
+}
+
+function selectOption(idx) {
+  if (answered) return;
+
+  // Visual selection
+  const allBtns = document.querySelectorAll('.option-btn');
+  allBtns.forEach(b => b.classList.remove('selected'));
+  const btn = document.querySelector('.option-btn[data-idx="' + idx + '"]');
+  if (btn) btn.classList.add('selected');
+
+  selectedOption = idx;
+
+  // Enable next button
+  const nextBtn = document.getElementById('nextBtn');
+  if (nextBtn) {
+    nextBtn.disabled = false;
+    nextBtn.textContent = '确认答案';
+    nextBtn.onclick = submitAnswer;
+  }
+}
+
+function submitAnswer() {
+  if (answered || selectedOption < 0) return;
+  answered = true;
+
+  const q = questions[currentIndex];
+  const isCorrect = (selectedOption === q.correct_idx);
+
+  // Disable all buttons
+  const allBtns = document.querySelectorAll('.option-btn');
+  allBtns.forEach(b => b.disabled = true);
+
+  // Highlight correct answer
+  const correctBtn = document.querySelector('.option-btn[data-idx="' + q.correct_idx + '"]');
+  if (correctBtn) correctBtn.classList.add('correct-answer');
+
+  // Highlight wrong selection
+  if (!isCorrect) {
+    const wrongBtn = document.querySelector('.option-btn[data-idx="' + selectedOption + '"]');
+    if (wrongBtn) wrongBtn.classList.add('wrong-answer');
+  }
+
+  // Feedback
+  const feedback = document.getElementById('feedback');
+  if (isCorrect) {
+    score++;
+    feedback.className = 'feedback correct-msg show';
+    feedback.innerHTML = '✓ 回答正确！';
+  } else {
+    feedback.className = 'feedback wrong-msg show';
+    feedback.innerHTML = '✗ 回答错误<div class="correct-answer">正确答案：' + escapeHtml(q.options[q.correct_idx]) + '</div>';
+    wrongList.push({
+      q: q.q,
+      a: q.options[q.correct_idx],
+      ua: q.options[selectedOption]
+    });
+  }
+
+  // Update header score
+  const header = document.querySelector('.header span:last-child');
+  if (header) header.textContent = '得分: ' + score;
+
+  // Update next button
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.textContent = '下一题 →';
+  nextBtn.disabled = false;
+  nextBtn.onclick = nextQuestion;
+
+  // Remove keyboard handler
+  document.removeEventListener('keydown', handleKeydown);
+
+  // Auto advance
+  autoAdvanceTimer = setTimeout(() => {
+    nextQuestion();
+  }, 2000);
+}
+
+function nextQuestion() {
+  if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+  currentIndex++;
+  if (currentIndex >= questions.length) {
+    renderResult();
+  } else {
+    renderQuestion();
+  }
+}
+
+function renderResult() {
+  document.removeEventListener('keydown', handleKeydown);
+  const total = questions.length;
+  const percent = Math.round((score / total) * 100);
+  const wrongCount = wrongList.length;
+
+  let grade = '';
+  let gradeColor = '';
+  if (percent >= 90) { grade = '优秀'; gradeColor = '#ffd200'; }
+  else if (percent >= 75) { grade = '良好'; gradeColor = '#4cd964'; }
+  else if (percent >= 60) { grade = '及格'; gradeColor = '#ff9500'; }
+  else { grade = '继续努力'; gradeColor = '#ff453a'; }
+
+  let wrongHtml = '';
+  if (wrongList.length > 0) {
+    wrongHtml = `
+      <div style="margin-top:24px; text-align:left;">
+        <div style="color:rgba(255,255,255,0.6); font-size:14px; margin-bottom:12px;">错题回顾：</div>
+        <div style="max-height:300px; overflow-y:auto; padding-right:8px;">
+          ${wrongList.map((w, i) => `
+            <div style="background:rgba(255,69,58,0.08); border:1px solid rgba(255,69,58,0.2); border-radius:10px; padding:12px 14px; margin-bottom:8px; font-size:14px;">
+              <div style="color:#fff; margin-bottom:4px;">${i+1}. ${escapeHtml(w.q)}</div>
+              <div style="color:#ff453a;">你的答案：${escapeHtml(w.ua)}</div>
+              <div style="color:#ffd200;">正确答案：${escapeHtml(w.a)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  document.getElementById('app').innerHTML = `
+    <div class="card result-card">
+      <div class="score-label">答题完成</div>
+      <div class="score-circle" style="--percent:${(score/total*360).toFixed(0)}deg">
+        <div class="score-num">${score}</div>
+      </div>
+      <div style="font-size:22px; font-weight:700; color:${gradeColor}; margin-bottom:8px;">${grade}</div>
+      <div style="color:rgba(255,255,255,0.5); font-size:14px;">共 ${total} 题，正确率 ${percent}%</div>
+      <div class="result-stats">
+        <div class="stat">
+          <div class="stat-val green">${score}</div>
+          <div class="stat-lbl">答对</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val red">${wrongCount}</div>
+          <div class="stat-lbl">答错</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val rate">${percent}%</div>
+          <div class="stat-lbl">正确率</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn btn-restart" onclick="startQuiz(${totalQuestions})">再来一轮</button>
+        <button class="btn btn-restart" onclick="renderSelectScreen()" style="background:rgba(255,255,255,0.12);">重新选题</button>
+      </div>
+      ${wrongHtml}
+    </div>
+  `;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderSelectScreen() {
+  const total = ALL_QUESTIONS.length;
+  const options = [
+    { count: 10, label: '10 题' },
+    { count: 20, label: '20 题' },
+    { count: 50, label: '50 题' },
+    { count: 100, label: '100 题' },
+    { count: 200, label: '200 题' },
+    { count: total, label: '全部 (' + total + ' 题)', all: true },
+  ];
+
+  let optionHtml = options.map((opt) => {
+    if (opt.all) {
+      return '<button class="btn-option all-btn" onclick="startQuiz(' + opt.count + ')">' +
+        '<span class="count-num">ALL</span>' +
+        '<span class="count-label">' + opt.label + '</span>' +
+      '</button>';
+    }
+    return '<button class="btn-option" onclick="startQuiz(' + opt.count + ')">' +
+      '<span class="count-num">' + opt.count + '</span>' +
+      '<span class="count-label">' + opt.label + '</span>' +
+    '</button>';
+  }).join('');
+
+  document.getElementById('app').innerHTML = `
+    <div class="card select-card">
+      <div class="logo">&#x2753;</div>
+      <div class="title">趣味答题挑战</div>
+      <div class="subtitle">四选一选择题，检验你的知识储备</div>
+      <div class="total-info">题库共 <strong>${total}</strong> 道选择题</div>
+      <div class="option-grid">${optionHtml}</div>
+      <div style="color:rgba(255,255,255,0.3); font-size:13px;">选择题目数量后开始答题</div>
+    </div>
+  `;
+}
+
+// Start
+renderSelectScreen();
+</script>
+</body>
+</html>
