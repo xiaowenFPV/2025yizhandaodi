@@ -125,67 +125,6 @@ body {
 .stat-lbl { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 4px; }
 
 .hint { text-align: center; color: rgba(255,255,255,0.35); font-size: 13px; margin-top: 16px; }
-/* ===== 退出按钮 ===== */
-.exit-btn {
-  position: fixed; top: 20px; left: 20px; z-index: 100;
-  width: 40px; height: 40px; border-radius: 50%;
-  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.6); font-size: 18px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.25s; backdrop-filter: blur(10px);
-}
-
-.exit-btn:hover {
-  background: rgba(255,69,58,0.15); border-color: rgba(255,69,58,0.3);
-  color: #ff453a; transform: scale(1.08);
-}
-
-.exit-confirm-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-  display: flex; align-items: center; justify-content: center; z-index: 9999;
-  animation: fadeIn 0.2s ease;
-}
-
-.exit-confirm-box {
-  background: linear-gradient(135deg, #1a1a3e, #2d2b55);
-  border: 1px solid rgba(255,255,255,0.15); border-radius: 18px;
-  padding: 28px 24px; width: 320px; max-width: 90vw; text-align: center;
-}
-
-.exit-confirm-box .ec-title {
-  font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 10px;
-}
-
-.exit-confirm-box .ec-desc {
-  font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 24px; line-height: 1.5;
-}
-
-.exit-confirm-box .ec-actions {
-  display: flex; gap: 10px; justify-content: center;
-}
-
-.ec-btn {
-  padding: 10px 24px; font-size: 14px; font-weight: 600; border: none;
-  border-radius: 10px; cursor: pointer; transition: all 0.2s;
-}
-
-.ec-btn.yes {
-  background: linear-gradient(135deg, #ff453a, #ff6b5b); color: #fff;
-}
-
-.ec-btn.yes:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,69,58,0.4); }
-
-.ec-btn.no {
-  background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7);
-}
-
-.ec-btn.no:hover { background: rgba(255,255,255,0.15); }
-
-@media (max-width: 600px) {
-  .exit-btn { top: 12px; left: 12px; width: 34px; height: 34px; font-size: 16px; }
-}
-
-
 
 /* ===== 选择界面 ===== */
 .select-card { text-align: center; }
@@ -695,8 +634,7 @@ function renderWaitingRoom() {
       <div style="text-align:left;max-width:320px;margin:0 auto 20px;">
         ${playerListHtml}
       </div>
-      ${isHost ? `<button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
-    
+      ${isHost ? `
         <div style="color:rgba(255,255,255,0.5);font-size:14px;margin-bottom:8px;">选择题目数量开始对战：</div>
         <div class="option-grid" style="max-width:360px;margin:0 auto 24px;">
           ${[10,20,50,100,200].map(n => `
@@ -778,8 +716,7 @@ function renderBattleQuestion() {
       </div>
     </div>
     <div class="hint">输入答案后按回车或点提交</div>
-  `<button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
-    ;
+  `;
 
   answered = false;
   answeredCount = 0;
@@ -883,8 +820,7 @@ function renderBattleRoundResult(data) {
             ${data.ranking.map((r, i) => {
               const isMe = r.id === myPlayerId;
               const cls = i === 0 ? 'rank-1' : (i === 1 ? 'rank-2' : (i === 2 ? 'rank-3' : ''));
-              return `<button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
-    <tr style="${isMe?'background:rgba(255,210,0,0.08);':''}">
+              return `<tr style="${isMe?'background:rgba(255,210,0,0.08);':''}">
                 <td style="padding:4px 6px;font-weight:700;color:${cls==='rank-1'?'#ffd200':cls==='rank-2'?'#c0c0c0':cls==='rank-3'?'#cd7f32':'rgba(255,255,255,0.5)'};">#${r.rank}</td>
                 <td style="padding:4px 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(r.name)}${isMe?' (我)':''}</td>
                 <td style="padding:4px 6px;font-weight:700;color:#ffd200;text-align:right;">${r.score}</td>
@@ -959,8 +895,7 @@ function renderBattleGameOver(data) {
         <div style="max-height:240px;overflow-y:auto;padding-right:8px;">
           ${roundResults.map((rr, i) => {
             const myR = rr.results.find(r => r.id === myPlayerId);
-            return `<button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
-    
+            return `
             <div class="round-result-item" style="margin-bottom:6px;padding:8px;">
               <span style="font-size:12px;color:rgba(255,255,255,0.4);margin-right:8px;">R${i+1}</span>
               <span style="flex:1;font-size:12px;color:rgba(255,255,255,0.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(rr.questionText)}</span>
@@ -1058,8 +993,7 @@ function renderSoloQuestion() {
       <button class="btn btn-next" id="nextBtn" disabled onclick="soloNext()">下一题 →</button>
     </div>
     <div class="hint">输入答案后按回车或点提交</div>
-  `<button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
-    ;
+  `;
   answered = false;
   const input = document.getElementById('answerInput');
   if (input) {
@@ -1134,50 +1068,10 @@ function renderSoloResult() {
         <button class="btn btn-restart" onclick="goHome()" style="background:rgba(255,255,255,0.12);">返回首页</button>
       </div>
       ${wh}
-    </div>`<button class="exit-btn" onclick="exitQuiz()" title="退出">←</button>
-    ;
+    </div>`;
 }
 
 // ============ 通用 ============
-
-// ============ 退出确认 ============
-function exitQuiz() {
-  const isRoom = gameMode === 'host' || gameMode === 'guest';
-  const msg = isRoom
-    ? '退出后将离开当前房间，答题进度不会保留。确定要退出吗？'
-    : '退出后当前答题进度将丢失。确定要退出吗？';
-
-  const modal = document.createElement('div');
-  modal.className = 'exit-confirm-overlay';
-  modal.id = 'exitConfirmOverlay';
-  modal.innerHTML = `
-    <div class="exit-confirm-box">
-      <div class="ec-title">退出答题</div>
-      <div class="ec-desc">${msg}</div>
-      <div class="ec-actions">
-        <button class="ec-btn no" onclick="closeExitConfirm()">继续答题</button>
-        <button class="ec-btn yes" onclick="confirmExit()">确认退出</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-}
-
-function closeExitConfirm() {
-  const el = document.getElementById('exitConfirmOverlay');
-  if (el) el.remove();
-}
-
-function confirmExit() {
-  closeExitConfirm();
-  if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
-  if (socket) { socket.disconnect(); socket = null; }
-  gameMode = 'solo'; roomCode = ''; myPlayerId = 0; myName = ''; players = [];
-  isHost = false; score = 0; answered = false; gameEnded = false;
-  roundResults = []; wrongList = []; answeredCount = 0; totalPlayers = 0;
-  renderHome();
-}
-
 function goHome() {
   if (socket) { socket.disconnect(); socket = null; }
   gameMode = 'solo'; roomCode = ''; myPlayerId = 0; myName = ''; players = [];
