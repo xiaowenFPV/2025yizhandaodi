@@ -9,30 +9,31 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 房间存储
 const rooms = {};
+let nextPlayerId = 0;
 
 function generateRoomCode() {
   const chars = '0123456789';
   let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
   return code;
 }
 
-function createRoom() {
+function createRoom(hostId, hostName) {
   let code;
   do { code = generateRoomCode(); } while (rooms[code]);
+  const pid = ++nextPlayerId;
   rooms[code] = {
-    code: code,
-    players: [],       // [{id, socketId, name, score, ready, answers:[], connected}]
+    code,
+    hostSocketId: hostId,
+    players: [{ id: pid, socketId: hostId, name: hostName, score: 0, answers: [], connected: true }],
+    state: 'waiting',
     questionCount: 0,
-    questions: [],     // 共享题目列表
-    state: 'waiting',  // waiting / selecting / playing / finished
+    questions: [],
     currentRound: 0,
+    totalPlayers: 1,
   };
-  return code;
+  return { code, pid };
 }
 
 io.on('connection', (socket) => {
@@ -40,79 +41,57 @@ io.on('connection', (socket) => {
 
   // === 创建房间 ===
   socket.on('createRoom', (playerName, callback) => {
-    const code = createRoom();
+    const { code, pid } = createRoom(socket.id, playerName);
     socket.join(code);
-    rooms[code].players.push({
-      id: 1,
-      socketId: socket.id,
-      name: playerName || '房主',
-      score: 0,
-      ready: true,
-      answers: [],
-      connected: true
-    });
     socket.data.roomCode = code;
-    socket.data.playerId = 1;
-    console.log(`[房间] ${code} 已创建，房主: ${playerName}`);
-    callback({ success: true, roomCode: code });
+    socket.data.playerId = pid;
+    console.log(`[房间] ${code} 创建，房主: ${playerName} (${pid})`);
+    callback({ success: true, roomCode: code, playerId: pid, players: rooms[code].players });
   });
 
   // === 加入房间 ===
   socket.on('joinRoom', (roomCode, playerName, callback) => {
     const room = rooms[roomCode];
     if (!room) return callback({ success: false, error: '房间不存在' });
-    if (room.players.length >= 2) return callback({ success: false, error: '房间已满' });
     if (room.state !== 'waiting') return callback({ success: false, error: '游戏已开始' });
 
+    const pid = ++nextPlayerId;
     socket.join(roomCode);
     room.players.push({
-      id: 2,
-      socketId: socket.id,
-      name: playerName || '挑战者',
-      score: 0,
-      ready: true,
-      answers: [],
-      connected: true
+      id: pid, socketId: socket.id, name: playerName,
+      score: 0, answers: [], connected: true
     });
     socket.data.roomCode = roomCode;
-    socket.data.playerId = 2;
-    console.log(`[房间] ${roomCode} 加入: ${playerName}`);
+    socket.data.playerId = pid;
 
-    // 通知双方对手已加入
-    io.to(roomCode).emit('opponentJoined', {
-      opponentName: room.players[0].name,
-      yourName: room.players[1].name,
-    });
-    callback({ success: true });
+    console.log(`[房间] ${roomCode} 加入: ${playerName} (${pid})，共 ${room.players.length} 人`);
+
+    // 广播更新后的玩家列表
+    io.to(roomCode).emit('playerList', room.players.map(p => ({
+      id: p.id, name: p.name, score: p.score, isHost: p.socketId === room.hostSocketId
+    })));
+
+    callback({ success: true, playerId: pid, players: room.players });
   });
 
-  // === 房主选择题目数量 ===
-  socket.on('selectQuestionCount', (count) => {
-    const code = socket.data.roomCode;
-    const room = rooms[code];
-    if (!room || room.players[0].socketId !== socket.id) return;
-
-    room.questionCount = count;
-    room.state = 'playing';
-
-    // 生成题目列表（基于题库，服务端也要有题库）
-    // 这里客户端会自己生成并同步，服务端只记录数量
-    io.to(code).emit('gameStart', {
-      questionCount: count,
-    });
-    console.log(`[房间] ${code} 开始对战，共 ${count} 题`);
-  });
-
-  // === 同步题目种子 ===
-  socket.on('syncQuestions', (questionsData) => {
+  // === 房主选择题目数量并开始 ===
+  socket.on('startGame', (questionCount, questionsData) => {
     const code = socket.data.roomCode;
     const room = rooms[code];
     if (!room) return;
+    if (room.hostSocketId !== socket.id) return;
 
-    // 房主的题目数据作为权威，广播给另一方
+    room.questionCount = questionCount;
     room.questions = questionsData;
-    // 通知另一方用同样的题目
-    socket.to(code).emit('receiveQuestions', questionsData);
+    room.state = 'playing';
+    room.currentRound = 0;
+
+    io.to(code).emit('gameStart', {
+      questionCount,
+      questions: questionsData,
+      players: room.players.map(p => ({ id: p.id, name: p.name, score: p.score }))
+    });
+    console.log(`[房间] ${code} 游戏开始，${room.players.length} 人，${questionCount} 题`);
   });
 
   // === 提交答案 ===
@@ -121,114 +100,93 @@ io.on('connection', (socket) => {
     const playerId = socket.data.playerId;
     const room = rooms[code];
     if (!room) return;
+    if (room.state !== 'playing') return;
 
     const player = room.players.find(p => p.id === playerId);
     if (!player) return;
+    if (player.answers[data.roundIndex] !== undefined) return; // 防止重复提交
 
     player.answers[data.roundIndex] = {
       answer: data.answer,
       isCorrect: data.isCorrect,
     };
 
-    // 检查双方是否都提交了本题
-    const p1Answered = room.players[0].answers[data.roundIndex] !== undefined;
-    const p2Answered = room.players[1] && room.players[1].answers[data.roundIndex] !== undefined;
+    // 检查是否所有人已提交
+    const allAnswered = room.players.every(p => p.answers[data.roundIndex] !== undefined);
+    const answeredCount = room.players.filter(p => p.answers[data.roundIndex] !== undefined).length;
 
-    if (p1Answered && p2Answered) {
-      const r1 = room.players[0].answers[data.roundIndex];
-      const r2 = room.players[1].answers[data.roundIndex];
-
+    if (allAnswered) {
       // 更新分数
-      if (r1.isCorrect) room.players[0].score++;
-      if (r2.isCorrect) room.players[1].score++;
+      room.players.forEach(p => {
+        if (p.answers[data.roundIndex].isCorrect) p.score++;
+      });
 
-      // 广播本轮结果
+      // 本轮排名（按累计得分降序）
+      const sorted = [...room.players].sort((a, b) => b.score - a.score);
+
+      const results = room.players.map(p => ({
+        id: p.id,
+        name: p.name,
+        answer: p.answers[data.roundIndex].answer,
+        isCorrect: p.answers[data.roundIndex].isCorrect,
+        score: p.score,
+      }));
+
       io.to(code).emit('roundResult', {
         roundIndex: data.roundIndex,
         correctAnswer: data.correctAnswer,
-        player1: {
-          name: room.players[0].name,
-          answer: r1.answer,
-          isCorrect: r1.isCorrect,
-          score: room.players[0].score,
-        },
-        player2: {
-          name: room.players[1].name,
-          answer: r2.answer,
-          isCorrect: r2.isCorrect,
-          score: room.players[1].score,
-        },
+        results,
+        ranking: sorted.map((p, i) => ({ id: p.id, name: p.name, score: p.score, rank: i + 1 })),
+        isLastRound: data.roundIndex >= room.questionCount - 1,
       });
 
-      console.log(`[房间] ${code} 第${data.roundIndex+1}题: P1=${r1.isCorrect?'✓':'✗'} P2=${r2.isCorrect?'✓':'✗'}`);
+      console.log(`[房间] ${code} R${data.roundIndex+1}/${room.questionCount}: ${answeredCount}/${room.players.length} 人已答`);
     } else {
-      // 告知双方当前已提交状态
       io.to(code).emit('answerStatus', {
-        player1Ready: p1Answered,
-        player2Ready: p2Answered,
         roundIndex: data.roundIndex,
+        answeredCount,
+        totalPlayers: room.players.length,
       });
     }
   });
 
   // === 游戏结束 ===
-  socket.on('gameOver', (data) => {
+  socket.on('gameOver', () => {
     const code = socket.data.roomCode;
     const room = rooms[code];
     if (!room) return;
     room.state = 'finished';
 
-    const p1 = room.players[0];
-    const p2 = room.players[1];
-
-    let winner = 'draw';
-    if (p1.score > p2.score) winner = 'player1';
-    else if (p2.score > p1.score) winner = 'player2';
-
+    const sorted = [...room.players].sort((a, b) => b.score - a.score);
     io.to(code).emit('gameOver', {
-      player1: { name: p1.name, score: p1.score },
-      player2: { name: p2.name, score: p2.score },
-      winner: winner,
+      ranking: sorted.map((p, i) => ({ id: p.id, name: p.name, score: p.score, rank: i + 1 })),
     });
-    console.log(`[房间] ${code} 结束: ${p1.name}(${p1.score}) vs ${p2.name}(${p2.score})`);
+    console.log(`[房间] ${code} 结束，冠军: ${sorted[0].name}(${sorted[0].score})`);
   });
 
-  // === 断线处理 ===
+  // === 断线 ===
   socket.on('disconnect', () => {
     const code = socket.data.roomCode;
     const playerId = socket.data.playerId;
-    console.log(`[断开] ${socket.id} (房间: ${code}, 玩家: ${playerId})`);
+    if (!code || !rooms[code]) return;
 
-    if (code && rooms[code]) {
-      const room = rooms[code];
-      const player = room.players.find(p => p.id === playerId);
-      if (player) {
-        player.connected = false;
-      }
-      // 通知对方对手断线
-      socket.to(code).emit('opponentDisconnected', {
-        playerName: player ? player.name : '对手',
-      });
-    }
-  });
-
-  // === 重新连接 ===
-  socket.on('reconnect', (roomCode, playerId, callback) => {
-    const room = rooms[roomCode];
-    if (!room) return callback({ success: false, error: '房间不存在' });
-
+    const room = rooms[code];
     const player = room.players.find(p => p.id === playerId);
-    if (!player) return callback({ success: false, error: '玩家不存在' });
+    if (player) player.connected = false;
 
-    player.connected = true;
-    player.socketId = socket.id;
-    socket.join(roomCode);
-    socket.data.roomCode = roomCode;
-    socket.data.playerId = playerId;
+    const leftPlayers = room.players.filter(p => p.connected);
+    socket.to(code).emit('playerDisconnected', {
+      playerId, playerName: player ? player.name : '未知',
+      playerList: leftPlayers.map(p => ({ id: p.id, name: p.name, score: p.score, isHost: p.socketId === room.hostSocketId }))
+    });
 
-    callback({ success: true, state: room.state, score: player.score });
-    socket.to(roomCode).emit('opponentReconnected');
-    console.log(`[重连] ${socket.id} 回到房间 ${roomCode}`);
+    // 如果全部断开，清理房间
+    if (leftPlayers.length === 0) {
+      delete rooms[code];
+      console.log(`[清理] 房间 ${code} 已移除`);
+    }
+
+    console.log(`[断开] ${player ? player.name : '?'} (${socket.id})`);
   });
 });
 
