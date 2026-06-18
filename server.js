@@ -380,7 +380,6 @@ io.on('connection', (socket) => {
     if (ack) ack({ success: true, playerList, gameState: room.state });
     console.log(`[重连] ${name} 已恢复 (${room.state})`);
   });
-  });
 });
 
 const PORT = process.env.PORT || 3000;
