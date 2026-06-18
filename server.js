@@ -12,54 +12,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const rooms = {};
 let nextPlayerId = 0;
 
-// === 决斗题库 ===
-const duelQuestionBank = [
-  { q: "地球上最大的海洋是？", a: "太平洋" },
-  { q: "光年是什么的单位？", a: "距离" },
-  { q: "人体最大的器官是？", a: "皮肤" },
-  { q: "太阳系中最大的行星是？", a: "木星" },
-  { q: "水的化学式是什么？", a: "H2O" },
-  { q: "中国最长的河流是？", a: "长江" },
-  { q: "世界上最高的山峰是？", a: "珠穆朗玛峰" },
-  { q: "一年有多少天？", a: "365" },
-  { q: "地球绕太阳一周需要多长时间？", a: "一年" },
-  { q: "人体有多少块骨头？", a: "206" },
-  { q: "声音在真空中能传播吗？", a: "不能" },
-  { q: "铁生锈需要什么条件？", a: "水和氧气" },
-  { q: "中国的首都是？", a: "北京" },
-  { q: "世界上最小的国家是？", a: "梵蒂冈" },
-  { q: "DNA的中文名称是？", a: "脱氧核糖核酸" },
-  { q: "地球的卫星是？", a: "月球" },
-  { q: "世界上最长的城墙是？", a: "长城" },
-  { q: "1公里等于多少米？", a: "1000" },
-  { q: "冰融化变成什么？", a: "水" },
-  { q: "中国有多少个民族？", a: "56" },
-  { q: "人体正常体温是多少摄氏度？", a: "37" },
-  { q: "《红楼梦》的作者是？", a: "曹雪芹" },
-  { q: "地球自转一周需要多长时间？", a: "一天" },
-  { q: "氧气占空气体积的百分之多少？", a: "21" },
-  { q: "世界上最大的沙漠是？", a: "撒哈拉沙漠" },
-  { q: "中国最大的岛屿是？", a: "台湾岛" },
-  { q: "光的速度约为每秒多少公里？", a: "30万" },
-  { q: "人体最硬的物质是？", a: "牙釉质" },
-  { q: "世界杯足球赛几年举办一次？", a: "4" },
-  { q: "中国农历有多少个节气？", a: "24" },
-  { q: "被誉为万园之园的是？", a: "圆明园" },
-  { q: "三国演义中桃园三结义不包括谁？", a: "曹操" },
-  { q: "计算机的CPU中文名叫什么？", a: "中央处理器" },
-  { q: "地球上最大的动物是？", a: "蓝鲸" },
-  { q: "奥运会几年举办一次？", a: "4" },
-  { q: "人体最小的骨头在哪个部位？", a: "耳朵" },
-  { q: "中国四大发明不包括哪一个？", a: "造纸术" },
-  { q: "马拉松全程约多少公里？", a: "42" },
-  { q: "QQ的谐音是什么？", a: "求求" },
-  { q: "一打是多少个？", a: "12" },
-];
-
-function getRandomDuelQuestions(count) {
-  const shuffled = [...duelQuestionBank].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
-}
+// 决斗题库由客户端传入 ALL_QUESTIONS，不再硬编码
 
 function generateRoomCode() {
   const chars = '0123456789';
@@ -154,7 +107,7 @@ io.on('connection', (socket) => {
   });
   // ============ 1v1 决斗事件 ============
 
-  socket.on('duelReady', () => {
+  socket.on('duelReady', (data) => {
     const code = socket.data.roomCode;
     const playerId = socket.data.playerId;
     const room = rooms[code];
@@ -162,6 +115,10 @@ io.on('connection', (socket) => {
     const player = room.players.find(p => p.id === playerId);
     if (!player) return;
     player.ready = true;
+    // 存储客户端传入的题库
+    if (data && data.questions && data.questions.length > 0 && !room.duelQuestionData) {
+      room.duelQuestionData = data.questions;
+    }
     console.log(`[决斗] ${code} ${player.name} 已准备`);
     socket.to(code).emit('duelReadyStatus', { playerId, ready: true });
 
@@ -214,7 +171,7 @@ io.on('connection', (socket) => {
         });
         room.duelRoundTimeout = setTimeout(() => {
           resolveDuelRound(room, code, null);
-        }, 30000);
+        }, 15000);
       }
     } else if (playerId !== room.duelFirstAnswerer) {
       // 第二位作答
@@ -229,7 +186,10 @@ io.on('connection', (socket) => {
   // ============ 决斗辅助函数（作用域内） ============
 
   function startDuelGame(room, code) {
-    const questions = getRandomDuelQuestions(15);
+    // 从客户端传入的题库中随机抽取 15 题
+    const questionPool = room.duelQuestionData || [];
+    const shuffled = [...questionPool].sort(() => Math.random() - 0.5);
+    const questions = shuffled.slice(0, 15);
     room.state = 'duel_playing';
     room.duelQuestions = questions;
     room.duelCurrentRound = 0;
@@ -260,7 +220,7 @@ io.on('connection', (socket) => {
       wins
     });
 
-    // 30秒超时
+    // 15秒超时
     if (room.duelRoundTimeout) clearTimeout(room.duelRoundTimeout);
     room.duelRoundTimeout = setTimeout(() => {
       io.to(code).emit('duelTimeout');
@@ -271,7 +231,7 @@ io.on('connection', (socket) => {
           resolveDuelRound(room, code, null);
         }
       }, 3000);
-    }, 30000);
+    }, 15000);
   }
 
   function resolveDuelRound(room, code, winnerId) {
