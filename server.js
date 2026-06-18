@@ -294,7 +294,7 @@ io.on('connection', (socket) => {
     }
   }
 
-  // === 断线 ===
+  // === 断线（10秒优雅期） ===
   socket.on('disconnect', () => {
     const code = socket.data.roomCode;
     const playerId = socket.data.playerId;
@@ -304,25 +304,82 @@ io.on('connection', (socket) => {
     const player = room.players.find(p => p.id === playerId);
     if (player) player.connected = false;
 
-    // 清理决斗定时器
-    if (room.duelRoundTimeout) {
-      clearTimeout(room.duelRoundTimeout);
-      room.duelRoundTimeout = null;
+    const leftPlayers = room.players.filter(p => p.connected);
+    console.log(`[断开] ${player ? player.name : '?'} (${socket.id})，${leftPlayers.length}/${room.players.length} 在线，等待10秒优雅期`);
+
+    // 10秒后仍未重连则通知其他玩家
+    room._disconnectTimer = setTimeout(() => {
+      if (!rooms[code]) return;
+      const stillConnected = room.players.filter(p => p.connected);
+      if (stillConnected.length > 0) {
+        socket.to(code).emit('playerDisconnected', {
+          playerId, playerName: player ? player.name : '未知',
+          playerList: stillConnected.map(p => ({
+            id: p.id, name: p.name, score: p.score,
+            isHost: p.socketId === room.hostSocketId,
+            ready: p.ready
+          }))
+        });
+        console.log(`[通知] 玩家 ${player ? player.name : '?'} 断线，对方已收到通知`);
+      }
+      // 全部断开则清理房间
+      if (stillConnected.length === 0) {
+        // 清理决斗定时器
+        if (room.duelRoundTimeout) {
+          clearTimeout(room.duelRoundTimeout);
+          room.duelRoundTimeout = null;
+        }
+        delete rooms[code];
+        console.log(`[清理] 房间 ${code} 已移除（全员离线）`);
+      }
+      room._disconnectTimer = null;
+    }, 10000);
+  });
+
+  // === 重连 ===
+  socket.on('rejoinDuel', (data, ack) => {
+    const { code, playerId, name } = data;
+    if (!code || !rooms[code]) {
+      if (ack) ack({ success: false, error: '房间不存在' });
+      return;
     }
 
-    const leftPlayers = room.players.filter(p => p.connected);
-    socket.to(code).emit('playerDisconnected', {
-      playerId, playerName: player ? player.name : '未知',
-      playerList: leftPlayers.map(p => ({ id: p.id, name: p.name, score: p.score, isHost: p.socketId === room.hostSocketId, ready: p.ready }))
+    const room = rooms[code];
+    const player = room.players.find(p => p.id === playerId);
+    if (!player) {
+      if (ack) ack({ success: false, error: '玩家不存在' });
+      return;
+    }
+
+    // 取消断线计时器
+    if (room._disconnectTimer) {
+      clearTimeout(room._disconnectTimer);
+      room._disconnectTimer = null;
+      console.log(`[重连] ${name} 已恢复，取消断线通知`);
+    }
+
+    // 恢复玩家状态
+    player.connected = true;
+    player.socketId = socket.id;
+    socket.data.roomCode = code;
+    socket.data.playerId = playerId;
+    socket.join(code);
+
+    const playerList = room.players.map(p => ({
+      id: p.id, name: p.name, score: p.score,
+      isHost: p.socketId === room.hostSocketId,
+      ready: p.ready,
+      connected: p.connected
+    }));
+
+    io.to(code).emit('playerReconnected', {
+      playerId, playerName: name,
+      playerList
     });
 
-    // 如果全部断开，清理房间
-    if (leftPlayers.length === 0) {
-      delete rooms[code];
-      console.log(`[清理] 房间 ${code} 已移除`);
-    }
-
-    console.log(`[断开] ${player ? player.name : '?'} (${socket.id})`);
+    if (ack) ack({ success: true, playerList, gameState: room.state });
+    console.log(`[重连] ${name} 已恢复 (${room.state})`);
+  });
   });
 });
 

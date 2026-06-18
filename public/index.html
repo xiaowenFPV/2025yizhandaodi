@@ -655,7 +655,33 @@ function initDuelSocket() {
 
   socket = io({ transports: ['websocket', 'polling'] });
 
-  socket.on('connect', () => {});
+  socket.on('connect', () => {
+    // 自动重连：如果之前已在房间中则尝试恢复
+    if (gameMode === 'duel' && roomCode && myPlayerId && myName) {
+      socket.emit('rejoinDuel', { code: roomCode, playerId: myPlayerId, name: myName }, (res) => {
+        if (res && res.success) {
+          console.log('已恢复连接');
+          if (res.playerList) {
+            players = res.playerList.map(p => ({
+              id: p.id, name: p.name, score: p.score,
+              isHost: p.isHost !== undefined ? p.isHost : (p.id === res.playerList[0].id)
+            }));
+            if (players.length >= 2) {
+              const opp = players.find(p => p.id !== myPlayerId);
+              if (opp) duelOpponentName = opp.name;
+            }
+            // 恢复 ready 状态
+            if (res.playerList[0]?.ready !== undefined) {
+              res.playerList.forEach(p => {
+                if (p.id === myPlayerId) duelIsReady = p.ready;
+                else duelOpponentReady = p.ready;
+              });
+            }
+          }
+        }
+      });
+    }
+  });
 
   socket.on('playerList', (data) => {
     players = data.players.map(p => ({
@@ -727,6 +753,15 @@ function initDuelSocket() {
     if (gameMode === 'duel') {
       alert('对手离开了游戏');
       goHome();
+    }
+  });
+
+  socket.on('playerReconnected', (data) => {
+    if (data.playerList) {
+      players = data.playerList.map(p => ({
+        id: p.id, name: p.name, score: p.score, isHost: p.isHost,
+        connected: p.connected
+      }));
     }
   });
 }
